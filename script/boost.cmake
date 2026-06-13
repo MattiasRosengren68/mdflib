@@ -14,7 +14,7 @@ if (NOT Boost_FOUND)
         set(Boost_ROOT ${COMP_DIR}/boost/latest)
     endif()
 
-    find_package(Boost REQUIRED CONFIG COMPONENTS filesystem locale program_options iostreams process)
+    find_package(Boost REQUIRED CONFIG COMPONENTS filesystem locale program_options process)
 
 
 endif()
