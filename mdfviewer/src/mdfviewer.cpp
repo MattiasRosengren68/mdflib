@@ -60,6 +60,8 @@ wxEND_EVENT_TABLE()
 
 bool MdfViewer::OnInit() {
 
+  SetAppearance(Appearance::System);
+
   if (!wxApp::OnInit()) {
     return false;
   }
@@ -100,8 +102,8 @@ bool MdfViewer::OnInit() {
     auto temp_dir = std::filesystem::temp_directory_path();
     auto unique = boost::filesystem::unique_path("MdfViewer%%%%");
     temp_dir.append(unique.string());
-    std::filesystem::remove_all(temp_dir);
-    std::filesystem::create_directories(temp_dir);
+    remove_all(temp_dir);
+    create_directories(temp_dir);
     my_temp_dir_ = temp_dir.string();
     LOG_INFO() << "Create a temporary directory. Path: " << my_temp_dir_;
   } catch (const std::exception& error) {
@@ -169,7 +171,7 @@ void MdfViewer::OnUpdateOpenLogFile(wxUpdateUIEvent &event) {
   std::string logfile = log_config.GetLogFile();
   try {
     std::filesystem::path p(logfile);
-    const bool exist = std::filesystem::exists(p);
+    const bool exist = exists(p);
     event.Enable(exist);
   } catch (const std::exception&) {
     event.Enable(false);

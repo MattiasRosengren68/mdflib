@@ -222,6 +222,7 @@ class MdfHelper {
       double value, uint8_t decimals, bool fixed = false,
       const std::string &unit = {});  ///< Converts a float to a string.
 
+  static std::string FormatHex(uint64_t value);
   static uint64_t NowNs(); ///< Return nano-seconds since 1970.
 
   /** \brief Converts a Latin1 string to UTF8 string. */

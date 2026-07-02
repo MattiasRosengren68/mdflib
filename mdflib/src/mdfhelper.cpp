@@ -292,6 +292,12 @@ std::string MdfHelper::FormatDouble(double value, uint8_t decimals, bool fixed,
   return text;
 }
 
+std::string MdfHelper::FormatHex(uint64_t value) {
+  std::ostringstream temp;
+  temp << "0x"<< std::hex << std::uppercase << value;
+  return temp.str();
+}
+
 uint64_t MdfHelper::NowNs() {
   const auto now = std::chrono::system_clock::now();
   const auto ns_midnight = std::chrono::duration_cast<std::chrono::nanoseconds>(

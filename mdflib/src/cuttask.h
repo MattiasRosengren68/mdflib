@@ -9,10 +9,10 @@
 
 namespace mdf {
 
-class SortingTask : public MdfTask {
+class CutTask : public MdfTask {
 public:
-  SortingTask() = default;
-  ~SortingTask() override = default;
+  CutTask() = default;
+  ~CutTask() override = default;
 
   void Run() override;
 
@@ -21,11 +21,13 @@ private:
   uint64_t sample_time_ = 0;
   ChannelObserverList observer_list_;
 
-  void SortFile();
+
+  void CutFile();
   void ReadInData(IDataGroup& data_group, const IChannelGroup& channel_group);
   void CopyData(const IChannelGroup& source_cg, const IChannelGroup& dest_cg);
   void AppendHistory() const;
 };
 
 }  // namespace mdf
+
 

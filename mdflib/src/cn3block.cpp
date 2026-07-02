@@ -356,9 +356,18 @@ std::string Cn3Block::Comment() const { return comment_; }
 
 MdfBlock *Cn3Block::Find(int64_t index) const {
   if (cc_block_) {
-    auto *p = cc_block_->Find(index);
-    if (p != nullptr) {
-      return p;
+    if (auto *block = cc_block_->Find(index);block != nullptr) {
+      return block;
+    }
+  }
+  if (ce_block_) {
+    if (auto *block = ce_block_->Find(index);block != nullptr) {
+      return block;
+    }
+  }
+  if (cd_block_) {
+    if (auto *block = cd_block_->Find(index);block != nullptr) {
+      return block;
     }
   }
   return DataListBlock::Find(index);

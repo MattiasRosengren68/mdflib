@@ -10,12 +10,11 @@
 #include <map>
 #include <filesystem>
 
-
-
 #include "mdf/mdftask.h"
 #include "mdf/mdflogstream.h"
 #include "validatingtask.h"
 #include "sortingtask.h"
+#include "cuttask.h"
 
 using namespace std::filesystem;
 using MdfList = std::map<std::string, std::string>;
@@ -291,6 +290,111 @@ TEST_F(TestMdfTask, TestSortingTask) {
   }
   MdfLogStream::SetLogLevel(MdfLogSeverity::kTrace);
   EXPECT_GT(nof_sorted, 0);
+  //EXPECT_GT(nof_non_sorted, 0);
+
+}
+
+
+TEST_F(TestMdfTask, TestCutTask) {
+  if (kSkipTest) {
+    GTEST_SKIP();
+  }
+  MdfLogStream::SetLogLevel(MdfLogSeverity::kError);
+  size_t nof_cut = 0;
+
+  for (const auto& [name,file_path] : kMdfList) {
+    if (const auto filesize = file_size(file_path);
+      filesize > 1'000'000'000) {
+      continue;
+    }
+
+    MdfReader reader(file_path);
+    if (!reader.IsOk()) {
+      continue;
+    }
+
+    const bool read_config = reader.ReadEverythingButData();
+    if (!read_config) {
+      continue;
+    }
+    const auto* file = reader.GetFile();
+    if (file == nullptr) {
+      continue;
+    }
+    const IHeader* header = file->Header();
+    if (header == nullptr) {
+      continue;
+    }
+    const auto dg_list = header->DataGroups();
+    if (dg_list.size()!= 1) {
+      continue;
+    }
+    IDataGroup* data_group = dg_list.front();
+    if (data_group == nullptr) {
+      continue;
+    }
+    const auto cg_list = data_group->ChannelGroups();
+    if (cg_list.size() != 1) {
+      continue;
+    }
+    const IChannelGroup* channel_group = cg_list.front();
+    if (channel_group == nullptr) {
+      continue;
+    }
+    const IChannel* master = channel_group->GetMasterTimeChannel();
+    if (master == nullptr) {
+      continue;
+    }
+    auto time_observer = CreateChannelObserver(*data_group,
+      *channel_group, *master);
+    if (!time_observer) {
+      continue;
+    }
+    const bool read_time = reader.ReadData(*data_group);
+    if (!read_time) {
+      continue;
+    }
+    std::vector<double> time_list;
+    time_observer->GetEngSamples(time_list);
+    const auto nof_samples = time_list.size();
+    if (nof_samples < 10) {
+      continue;
+    }
+    // Remove first and last 2 sample i.e. 4 samples
+    const double min_time = time_list[2];
+    const double max_time = time_list[nof_samples - 3];
+
+    const uint64_t test_start = MdfHelper::NowNs();
+
+    CutTask task;
+    task.MinTime(min_time);
+    task.MaxTime(max_time);
+    task.RecalculateTime(true);
+    task.SourceFile(file_path);
+    path dest_file(kTestDir);
+    std::string filename = name + "_cut.mf4";
+    dest_file.append(filename);
+    task.DestinationFile(dest_file.string());
+    task.SkipIfNoSamples(true);
+
+    task.Run();
+    const uint64_t test_stop = MdfHelper::NowNs();
+    const double test_time = static_cast<double>(test_stop - test_start) / 1'000'000'000.0;
+
+    std::cout << "File: " << name << (task.Result() ? " OK (" : " ERROR (")
+       << test_time << "s)" << std::endl;
+    if (!task.Result()) {
+      for ( const auto& msg : task.MessageList() ) {
+        std::cout << "Error: " << msg << std::endl;
+      }
+    } else {
+      ++nof_cut;
+    }
+
+
+  }
+  MdfLogStream::SetLogLevel(MdfLogSeverity::kTrace);
+  EXPECT_GT(nof_cut, 0);
   //EXPECT_GT(nof_non_sorted, 0);
 
 }

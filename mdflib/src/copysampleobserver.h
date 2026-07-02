@@ -20,11 +20,18 @@ public:
                      const IChannelGroup& dest_channel_group);
 
   void OnSampleRecord() override;
+
+  void SetTimeRange(double min_time, double max_time);
+
 private:
   MdfWriter& writer_;
   const IDataGroup& dest_data_group_;
   const IChannelGroup& dest_channel_group_;
 
+  uint64_t min_time_ = 0; ///< Min absolute time (ns)
+  uint64_t max_time_ = 0; ///< Max absolute time (ns)
+
+  [[nodiscard]] bool IgnoreSample(uint64_t sample_time) const;
 };
 
 }  // namespace mdf

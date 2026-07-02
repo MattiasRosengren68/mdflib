@@ -174,6 +174,8 @@ add_library(mdf
         src/copysampleobserver.cpp
         src/copysampleobserver.h
         src/cutf.h src/cutf.cpp
+        src/cuttask.cpp
+        src/cuttask.h
 )
 
 include(${CMAKE_SOURCE_DIR}/script/zlib.cmake)

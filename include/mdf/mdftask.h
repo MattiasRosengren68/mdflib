@@ -50,6 +50,19 @@ public:
   void Version(MdfVersion version) { version_ = version; }
   [[nodiscard]] MdfVersion Version() const { return version_; }
 
+  void MinTime(double min_time) { min_time_ = min_time; }
+  [[nodiscard]] double MinTime() const { return min_time_; }
+
+  void MaxTime(double max_time) { max_time_ = max_time; }
+  [[nodiscard]] double MaxTime() const { return max_time_; }
+
+  void RecalculateTime(bool recalculate) {
+    recalculate_time_ = recalculate;
+  }
+  [[nodiscard]] bool RecalculateTime() const {
+    return recalculate_time_;
+  }
+
   virtual void Run() = 0;
 
   void Result(bool result) const { result_ = result; }
@@ -110,6 +123,9 @@ private:
   bool overwrite_file_ = false;
   bool skip_if_no_samples_ = false;
   MdfVersion version_ = MdfVersion::Mdf4_2;
+  double min_time_ = 0.0;
+  double max_time_ = 0.0;
+  bool recalculate_time_ = false;
 };
 
 }  // namespace mdf

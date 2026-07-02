@@ -82,7 +82,11 @@ class BlockAddress : public wxTreeItemData {
 wxString CreateBlockText(const mdf::detail::MdfBlock&block) {
   std::ostringstream block_string;
   block_string << block.BlockType();
-  const auto comment = block.Comment();
+  std::string comment = block.Comment();
+  if (comment.size() > 20) {
+    // Truncate the comment
+    comment = comment.substr(0, 20) + "...";
+  }
   if (!comment.empty()) {
     block_string << " (" << comment << ")";
   }
@@ -1121,7 +1125,7 @@ void ChildFrame::RedrawListView() {
   long line = 0;
   for (const auto& prop : property_list_) {
     switch (prop.Type()) {
-      case mdf::detail::BlockItemType::HeaderItem:
+      case BlockItemType::HeaderItem:
       {
         auto index = property_view_->InsertItem(line, wxString::FromUTF8(prop.Label()));
         auto font = property_view_->GetItemFont(index);
@@ -1130,7 +1134,7 @@ void ChildFrame::RedrawListView() {
       }
       break;
 
-      case mdf::detail::BlockItemType::LinkItem:
+      case BlockItemType::LinkItem:
       {
         auto index = property_view_->InsertItem(line, wxString::FromUTF8(prop.Label()));
         if (prop.Link() > 0) {
@@ -1142,7 +1146,7 @@ void ChildFrame::RedrawListView() {
       }
       break;
 
-      case mdf::detail::BlockItemType::BlankItem:
+      case BlockItemType::BlankItem:
       {
         auto index = property_view_->InsertItem(line, "");
         property_view_->SetItem(index, 1, "");
