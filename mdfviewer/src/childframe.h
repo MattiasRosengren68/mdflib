@@ -49,14 +49,14 @@ class ChildFrame : public wxDocMDIChildFrame {
   void RedrawMdf3Blocks(const mdf::detail::Mdf3File* file);
   void RedrawMdf4Blocks(const mdf::detail::Mdf4File* file);
 
-  void RedrawHistory(const mdf::detail::Hd4Block& hd, const wxTreeItemId& root);
+  void RedrawHistory(const mdf::detail::Hd4Block& hd, const wxTreeItemId& root) const;
 
   void RedrawMeasurement(const mdf::detail::Hd4Block& hd, const wxTreeItemId& root);
   void RedrawMeasurement(const mdf::detail::Hd3Block& hd, const wxTreeItemId& root);
 
   void RedrawHierarchy(const mdf::detail::Hd4Block& hd, const wxTreeItemId& root);
-  void RedrawAttachment(const mdf::detail::Hd4Block& hd, const wxTreeItemId& root);
-  void RedrawEvent(const mdf::detail::Hd4Block& hd, const wxTreeItemId& root);
+  void RedrawAttachment(const mdf::detail::Hd4Block& hd, const wxTreeItemId& root) const;
+  void RedrawEvent(const mdf::detail::Hd4Block& hd, const wxTreeItemId& root) const;
 
   void RedrawDataList(const mdf::detail::DataListBlock& dg, const wxTreeItemId& root);
 

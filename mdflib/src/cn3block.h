@@ -3,15 +3,17 @@
  * SPDX-License-Identifier: MIT
  */
 #pragma once
+
+#include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "cc3block.h"
 #include "cd3block.h"
 #include "ce3block.h"
 #include "datalistblock.h"
 #include "mdf/ichannel.h"
-#include "tx3block.h"
 
 namespace mdf::detail {
 class Cg3Block;

@@ -7,6 +7,7 @@
 #include <limits>
 
 #include "cg3block.h"
+#include "tx3block.h"
 #include "mdf/mdfhelper.h"
 
 namespace {

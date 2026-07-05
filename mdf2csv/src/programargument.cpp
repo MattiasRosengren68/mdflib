@@ -94,7 +94,7 @@ void ProgramArgument::Parse(int argc, char *argv[]) {
   }
 }
 
-void ProgramArgument::ShowHelp() {
+void ProgramArgument::ShowHelp() const {
   std::cout << std::endl;
   std::cout << kToolAndVersionText << std::endl;
   std::cout << kCopyrightText << std::endl;

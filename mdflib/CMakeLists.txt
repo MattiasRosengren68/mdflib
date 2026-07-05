@@ -141,45 +141,29 @@ add_library(mdf
         src/hoscaleconstraint.cpp ../include/mdf/hoscaleconstraint.h
         src/hocompuscale.cpp ../include/mdf/hocompuscale.h
         src/cccomment.cpp ../include/mdf/cccomment.h
-        src/ccunit.cpp
-        ../include/mdf/ccunit.h
-        src/cnunit.cpp
-        ../include/mdf/cnunit.h
-        src/iconfigadapter.cpp
-        ../include/mdf/iconfigadapter.h
-        src/canconfigadapter.cpp
-        ../include/mdf/canconfigadapter.h
-        ../include/mdf/mdfenumerates.h
-        src/mdfenumerates.cpp
-        src/mostmessage.cpp
-        ../include/mdf/mostmessage.h
-        src/mostconfigadapter.cpp
-        ../include/mdf/mostconfigadapter.h
-        src/flexraymessage.cpp
-        ../include/mdf/flexraymessage.h
-        src/flexrayconfigadapter.cpp
-        ../include/mdf/flexrayconfigadapter.h
-        src/canbusobserver.cpp
-        ../include/mdf/canbusobserver.h
-        src/mdftask.cpp
-        ../include/mdf/mdftask.h
-        src/validatingtask.cpp
-        src/validatingtask.h
-        src/sortingtask.cpp
-        src/sortingtask.h
-        src/sortingconfigadapter.cpp
-        src/sortingconfigadapter.h
-        src/samplerecordobserver.cpp
-        ../include/mdf/samplerecordobserver.h
-        src/copysampleobserver.cpp
-        src/copysampleobserver.h
+        src/ccunit.cpp ../include/mdf/ccunit.h
+        src/cnunit.cpp ../include/mdf/cnunit.h
+        src/iconfigadapter.cpp ../include/mdf/iconfigadapter.h
+        src/canconfigadapter.cpp ../include/mdf/canconfigadapter.h
+        ../include/mdf/mdfenumerates.h src/mdfenumerates.cpp
+        src/mostmessage.cpp  ../include/mdf/mostmessage.h
+        src/mostconfigadapter.cpp  ../include/mdf/mostconfigadapter.h
+        src/flexraymessage.cpp  ../include/mdf/flexraymessage.h
+        src/flexrayconfigadapter.cpp ../include/mdf/flexrayconfigadapter.h
+        src/canbusobserver.cpp ../include/mdf/canbusobserver.h
+        src/mdftask.cpp ../include/mdf/mdftask.h
+        src/validatingtask.cpp src/validatingtask.h
+        src/sortingtask.cpp src/sortingtask.h
+        src/sortingconfigadapter.cpp src/sortingconfigadapter.h
+        src/samplerecordobserver.cpp ../include/mdf/samplerecordobserver.h
+        src/copysampleobserver.cpp  src/copysampleobserver.h
         src/cutf.h src/cutf.cpp
-        src/cuttask.cpp
-        src/cuttask.h
+        src/cuttask.cpp src/cuttask.h
+        src/csvwriter.cpp ../include/mdf/csvwriter.h
 )
 
-include(${CMAKE_SOURCE_DIR}/script/zlib.cmake)
-include(${CMAKE_SOURCE_DIR}/script/expat.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../script/zlib.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../script/expat.cmake)
 
 target_link_libraries(mdf PRIVATE
     ZLIB::ZLIB
@@ -189,7 +173,7 @@ target_link_libraries(mdf PRIVATE
 target_include_directories(
   mdf PUBLIC
     $<INSTALL_INTERFACE:include>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
 )
 
 set_target_properties(mdf PROPERTIES POSITION_INDEPENDENT_CODE ON)

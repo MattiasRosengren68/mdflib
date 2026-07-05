@@ -12,7 +12,7 @@
 #include <mdf/mdflogstream.h>
 #include <mdf/idatagroup.h>
 #include <mdf/ichannelgroup.h>
-#include "csvwriter.h"
+#include <mdf/csvwriter.h>
 #include "programargument.h"
 
 

@@ -14,8 +14,6 @@ add_executable(test_mdf2csv
         ../src/programargument.h
         ../src/createfilelist.cpp
         ../src/createfilelist.h
-        ../src/csvwriter.cpp
-        ../src/csvwriter.h
         ../src/logtoconsole.cpp
         ../src/logtoconsole.h
         testcreatefiles.cpp)

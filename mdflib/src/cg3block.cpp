@@ -5,10 +5,12 @@
 #include "cg3block.h"
 
 #include <algorithm>
-#include <cstdio>
+#include <cstdint>
 
 #include "mdf/idatagroup.h"
 #include "mdf/mdflogstream.h"
+
+#include "tx3block.h"
 
 namespace {
 

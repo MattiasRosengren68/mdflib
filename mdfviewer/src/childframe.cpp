@@ -17,8 +17,6 @@
 #include "dl4block.h"
 #include "windowid.h"
 #include "ca4block.h"
-#include "dt4block.h"
-#include "dt3block.h"
 #include "dz4block.h"
 #include "sr4block.h"
 #include "cn4block.h"
@@ -312,7 +310,7 @@ void ChildFrame::Update() {
   }
 }
 
-void ChildFrame::RedrawHistory(const detail::Hd4Block &hd, const wxTreeItemId &root) {
+void ChildFrame::RedrawHistory(const Hd4Block &hd, const wxTreeItemId &root) const {
   if (hd.Fh4().empty()) {
     return;
   }
@@ -368,7 +366,7 @@ void ChildFrame::RedrawHierarchy(const detail::Hd4Block &hd, const wxTreeItemId 
   }
 }
 
-void ChildFrame::RedrawAttachment(const detail::Hd4Block &hd, const wxTreeItemId &root) {
+void ChildFrame::RedrawAttachment(const detail::Hd4Block &hd, const wxTreeItemId &root) const {
   if (hd.At4().empty()) {
     return;
   }
@@ -392,7 +390,7 @@ void ChildFrame::RedrawAttachment(const detail::Hd4Block &hd, const wxTreeItemId
   }
 }
 
-void ChildFrame::RedrawEvent(const detail::Hd4Block &hd, const wxTreeItemId &root) {
+void ChildFrame::RedrawEvent(const detail::Hd4Block &hd, const wxTreeItemId &root) const {
   if (hd.Ev4().empty()) {
     return;
   }
