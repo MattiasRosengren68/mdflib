@@ -15,13 +15,20 @@
 #include "mdfbuslogger.h"
 #include "mdfconverter.h"
 #include "cg4datawriter.h"
+#include "validatingtask.h"
+#include "sortingtask.h"
+#include "cuttask.h"
 
 using namespace mdf::detail;
 
 namespace mdf {
 
-std::unique_ptr<MdfReader> MdfFactory::CreateMdfReader(std::string filename) {
-  return std::make_unique<MdfReader>(std::move(filename));
+std::unique_ptr<MdfReader> MdfFactory::CreateMdfReader(const std::string& filename) {
+  return std::make_unique<MdfReader>(filename);
+}
+
+std::unique_ptr<MdfReader> MdfFactory::CreateMdfReader(const std::wstring& filename) {
+  return std::make_unique<MdfReader>(filename);
 }
 
 std::unique_ptr<MdfWriter> MdfFactory::CreateMdfWriter(MdfWriterType type) {
@@ -127,6 +134,29 @@ MdfFile* MdfFactory::CreateMdfFileEx(MdfFileType type) {
       break;
   }
   return file;
+}
+
+std::unique_ptr<MdfTask> MdfFactory::CreateTask(MdfTaskType type) {
+  switch (type) {
+    case MdfTaskType::MdfValidatingTask: {
+      auto validation_task = std::make_unique<ValidatingTask>();
+      return validation_task;
+    }
+
+    case MdfTaskType::MdfSortingTask: {
+      auto sorting_task = std::make_unique<SortingTask>();
+      return sorting_task;
+    }
+
+    case MdfTaskType::MdfCuttingTask: {
+      auto cutting_task = std::make_unique<CutTask>();
+      return cutting_task;
+    }
+
+    default:
+      break;
+  }
+  return {};
 }
 
 void MdfFactory::SetLogFunction2(const MdfLogFunction2& func) {

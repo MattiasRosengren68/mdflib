@@ -15,6 +15,7 @@
 #include "mdf/mdfwriter.h"
 #include "mdf/ichannelobserver.h"
 #include "mdf/idatawriter.h"
+#include "mdf/mdftask.h"
 
 namespace mdf {
 
@@ -23,6 +24,12 @@ namespace mdf {
 enum class MdfFileType : int {
   Mdf3FileType = 0, ///< MDF version 3 file.
   Mdf4FileType = 1  ///< MDF version 4 file.
+};
+
+enum class MdfTaskType : int {
+  MdfValidatingTask = 0,
+  MdfSortingTask = 1,
+  MdfCuttingTask = 2,
 };
 
 /** \brief Defines the log severity level. */
@@ -42,9 +49,9 @@ enum class MdfLogSeverity : uint8_t {
 using MdfLogFunction2 = std::function<void(MdfLogSeverity severity,
   const std::string& function, const std::string& text)>;
 
-class MdfWriter;
+
 class MdfFile;
-class IChannelObserver;
+
 
 /**
  * \brief Factory class for creating MDF-related objects.
@@ -63,8 +70,16 @@ class MdfFactory {
    *
    * \param filename Full path to the MDF file.
    */
-  static std::unique_ptr<MdfReader> CreateMdfReader(std::string filename);
+  static std::unique_ptr<MdfReader> CreateMdfReader(const std::string& filename);
 
+  /**
+ * \brief Creates an MDF reader object.
+ *
+ * The function creates a smart pointer to an MDF reader object.
+ *
+ * \param filename Full path to the MDF file.
+ */
+  static std::unique_ptr<MdfReader> CreateMdfReader(const std::wstring& filename);
   /**
    * \brief Creates an MDF writer object.
    *
@@ -102,6 +117,8 @@ class MdfFactory {
    * \param type Type of MDF file to create.
    */
   static MdfFile* CreateMdfFileEx(MdfFileType type);
+
+  static std::unique_ptr<MdfTask> CreateTask(MdfTaskType type);
 
   /**
    * \brief Sets the log function.
