@@ -18,6 +18,7 @@
 #include "validatingtask.h"
 #include "sortingtask.h"
 #include "cuttask.h"
+#include "mdftocsvtask.h"
 
 using namespace mdf::detail;
 
@@ -151,6 +152,11 @@ std::unique_ptr<MdfTask> MdfFactory::CreateTask(MdfTaskType type) {
     case MdfTaskType::MdfCuttingTask: {
       auto cutting_task = std::make_unique<CutTask>();
       return cutting_task;
+    }
+
+    case MdfTaskType::MdfConvertToCsvTask: {
+      auto csv_task = std::make_unique<MdfToCsvTask>();
+      return csv_task;
     }
 
     default:

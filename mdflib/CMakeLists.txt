@@ -160,6 +160,8 @@ add_library(mdf
         src/cutf.h src/cutf.cpp
         src/cuttask.cpp src/cuttask.h
         src/csvwriter.cpp ../include/mdf/csvwriter.h
+        src/mdftocsvtask.cpp
+        src/mdftocsvtask.h
 )
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../script/zlib.cmake)

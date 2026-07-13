@@ -241,7 +241,6 @@ TEST_F(TestMdfTask, TestSampleRecordObserver) {
   MdfLogStream::SetLogLevel(MdfLogSeverity::kTrace);
 }
 
-
 TEST_F(TestMdfTask, TestSortingTask) {
   if (kSkipTest) {
     GTEST_SKIP();
@@ -390,4 +389,47 @@ TEST_F(TestMdfTask, TestCutTask) {
   EXPECT_GT(nof_cut, 0);
 }
 
+TEST_F(TestMdfTask, TestMdfToCsvTask) {
+  if (kSkipTest) {
+    GTEST_SKIP();
+  }
+  MdfLogStream::SetLogLevel(MdfLogSeverity::kError);
+  size_t nof_sorted = 0;
+
+  for (const auto& [name,file_path] : kMdfList) {
+    if (const auto filesize = file_size(file_path);
+      filesize > 1'000'000'000) {
+      continue; // We don't convert large files due to test time
+    }
+
+    const uint64_t test_start = MdfHelper::NowNs();
+
+    auto task = MdfFactory::CreateTask(MdfTaskType::MdfConvertToCsvTask);
+    ASSERT_TRUE(task);
+
+    task->SourceFile(file_path);
+    path dest_file(kTestDir);
+    std::string filename = name + ".csv";
+    dest_file.append(filename);
+    task->DestinationFile(dest_file.string());
+
+    task->Run();
+    const uint64_t test_stop = MdfHelper::NowNs();
+    const double test_time = static_cast<double>(test_stop - test_start) / 1'000'000'000.0;
+
+    std::cout << "File: " << name <<
+      (task->Result() ? " OK (" : " ERROR (")
+       << test_time << "s)" << std::endl;
+    if (!task->Result()) {
+      for ( const auto& msg : task->MessageList() ) {
+        std::cout << "Error: " << msg << std::endl;
+      }
+    } else {
+      ++nof_sorted;
+    }
+
+  }
+  MdfLogStream::SetLogLevel(MdfLogSeverity::kTrace);
+  EXPECT_GT(nof_sorted, 0);
+}
 }  // namespace mdf::test

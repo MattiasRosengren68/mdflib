@@ -471,6 +471,12 @@
     <ClCompile Include="src\samplerecordobserver.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\mdftocsvtask.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\csvwriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\at4block.h">
@@ -942,6 +948,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\mdf\samplerecordobserver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mdftocsvtask.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\mdf\csvwriter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

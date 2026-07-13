@@ -30,6 +30,7 @@ enum class MdfTaskType : int {
   MdfValidatingTask = 0,
   MdfSortingTask = 1,
   MdfCuttingTask = 2,
+  MdfConvertToCsvTask = 3
 };
 
 /** \brief Defines the log severity level. */

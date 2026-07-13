@@ -214,6 +214,7 @@
     <ClCompile Include="src\convertersamplequeue.cpp" />
     <ClCompile Include="src\copysampleobserver.cpp" />
     <ClCompile Include="src\cryptoutil.cpp" />
+    <ClCompile Include="src\csvwriter.cpp" />
     <ClCompile Include="src\cutf.cpp" />
     <ClCompile Include="src\cuttask.cpp" />
     <ClCompile Include="src\datablock.cpp" />
@@ -302,6 +303,7 @@
     <ClCompile Include="src\mdformula.cpp" />
     <ClCompile Include="src\mdfreader.cpp" />
     <ClCompile Include="src\mdftask.cpp" />
+    <ClCompile Include="src\mdftocsvtask.cpp" />
     <ClCompile Include="src\mdfwriter.cpp" />
     <ClCompile Include="src\mdlist.cpp" />
     <ClCompile Include="src\mdnumber.cpp" />
@@ -351,6 +353,7 @@
     <ClInclude Include="..\include\mdf\cncomment.h" />
     <ClInclude Include="..\include\mdf\cnunit.h" />
     <ClInclude Include="..\include\mdf\cryptoutil.h" />
+    <ClInclude Include="..\include\mdf\csvwriter.h" />
     <ClInclude Include="..\include\mdf\dgcomment.h" />
     <ClInclude Include="..\include\mdf\etag.h" />
     <ClInclude Include="..\include\mdf\ethconfigadapter.h" />
@@ -475,6 +478,7 @@
     <ClInclude Include="src\mdfblock.h" />
     <ClInclude Include="src\mdfbuslogger.h" />
     <ClInclude Include="src\mdfconverter.h" />
+    <ClInclude Include="src\mdftocsvtask.h" />
     <ClInclude Include="src\platform.h" />
     <ClInclude Include="src\pr3block.h" />
     <ClInclude Include="src\rd4block.h" />
