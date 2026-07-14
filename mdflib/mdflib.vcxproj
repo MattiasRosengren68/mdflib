@@ -212,7 +212,11 @@
     <ClCompile Include="src\cncomment.cpp" />
     <ClCompile Include="src\cnunit.cpp" />
     <ClCompile Include="src\convertersamplequeue.cpp" />
+    <ClCompile Include="src\copysampleobserver.cpp" />
     <ClCompile Include="src\cryptoutil.cpp" />
+    <ClCompile Include="src\csvwriter.cpp" />
+    <ClCompile Include="src\cutf.cpp" />
+    <ClCompile Include="src\cuttask.cpp" />
     <ClCompile Include="src\datablock.cpp" />
     <ClCompile Include="src\datalistblock.cpp" />
     <ClCompile Include="src\datawriter.cpp" />
@@ -298,6 +302,8 @@
     <ClCompile Include="src\mdflogstream.cpp" />
     <ClCompile Include="src\mdformula.cpp" />
     <ClCompile Include="src\mdfreader.cpp" />
+    <ClCompile Include="src\mdftask.cpp" />
+    <ClCompile Include="src\mdftocsvtask.cpp" />
     <ClCompile Include="src\mdfwriter.cpp" />
     <ClCompile Include="src\mdlist.cpp" />
     <ClCompile Include="src\mdnumber.cpp" />
@@ -315,15 +321,19 @@
     <ClCompile Include="src\ri4block.cpp" />
     <ClCompile Include="src\rv4block.cpp" />
     <ClCompile Include="src\samplequeue.cpp" />
+    <ClCompile Include="src\samplerecordobserver.cpp" />
     <ClCompile Include="src\sd4block.cpp" />
     <ClCompile Include="src\si4block.cpp" />
     <ClCompile Include="src\sicomment.cpp" />
+    <ClCompile Include="src\sortingconfigadapter.cpp" />
+    <ClCompile Include="src\sortingtask.cpp" />
     <ClCompile Include="src\sr3block.cpp" />
     <ClCompile Include="src\sr4block.cpp" />
     <ClCompile Include="src\timestamp.cpp" />
     <ClCompile Include="src\tr3block.cpp" />
     <ClCompile Include="src\tx3block.cpp" />
     <ClCompile Include="src\tx4block.cpp" />
+    <ClCompile Include="src\validatingtask.cpp" />
     <ClCompile Include="src\vlsddata.cpp" />
     <ClCompile Include="src\writecache.cpp" />
     <ClCompile Include="src\writer4samplequeue.cpp" />
@@ -343,6 +353,7 @@
     <ClInclude Include="..\include\mdf\cncomment.h" />
     <ClInclude Include="..\include\mdf\cnunit.h" />
     <ClInclude Include="..\include\mdf\cryptoutil.h" />
+    <ClInclude Include="..\include\mdf\csvwriter.h" />
     <ClInclude Include="..\include\mdf\dgcomment.h" />
     <ClInclude Include="..\include\mdf\etag.h" />
     <ClInclude Include="..\include\mdf\ethconfigadapter.h" />
@@ -396,6 +407,7 @@
     <ClInclude Include="..\include\mdf\mdflogstream.h" />
     <ClInclude Include="..\include\mdf\mdformula.h" />
     <ClInclude Include="..\include\mdf\mdfreader.h" />
+    <ClInclude Include="..\include\mdf\mdftask.h" />
     <ClInclude Include="..\include\mdf\mdfwriter.h" />
     <ClInclude Include="..\include\mdf\mdlist.h" />
     <ClInclude Include="..\include\mdf\mdnumber.h" />
@@ -407,6 +419,7 @@
     <ClInclude Include="..\include\mdf\mostconfigadapter.h" />
     <ClInclude Include="..\include\mdf\mostmessage.h" />
     <ClInclude Include="..\include\mdf\samplerecord.h" />
+    <ClInclude Include="..\include\mdf\samplerecordobserver.h" />
     <ClInclude Include="..\include\mdf\sicomment.h" />
     <ClInclude Include="..\include\mdf\zlibutil.h" />
     <ClInclude Include="src\at4block.h" />
@@ -426,6 +439,9 @@
     <ClInclude Include="src\cn3block.h" />
     <ClInclude Include="src\cn4block.h" />
     <ClInclude Include="src\convertersamplequeue.h" />
+    <ClInclude Include="src\copysampleobserver.h" />
+    <ClInclude Include="src\cutf.h" />
+    <ClInclude Include="src\cuttask.h" />
     <ClInclude Include="src\datablock.h" />
     <ClInclude Include="src\datalistblock.h" />
     <ClInclude Include="src\datawriter.h" />
@@ -462,6 +478,7 @@
     <ClInclude Include="src\mdfblock.h" />
     <ClInclude Include="src\mdfbuslogger.h" />
     <ClInclude Include="src\mdfconverter.h" />
+    <ClInclude Include="src\mdftocsvtask.h" />
     <ClInclude Include="src\platform.h" />
     <ClInclude Include="src\pr3block.h" />
     <ClInclude Include="src\rd4block.h" />
@@ -471,11 +488,14 @@
     <ClInclude Include="src\samplequeue.h" />
     <ClInclude Include="src\sd4block.h" />
     <ClInclude Include="src\si4block.h" />
+    <ClInclude Include="src\sortingconfigadapter.h" />
+    <ClInclude Include="src\sortingtask.h" />
     <ClInclude Include="src\sr3block.h" />
     <ClInclude Include="src\sr4block.h" />
     <ClInclude Include="src\tr3block.h" />
     <ClInclude Include="src\tx3block.h" />
     <ClInclude Include="src\tx4block.h" />
+    <ClInclude Include="src\validatingtask.h" />
     <ClInclude Include="src\vlsddata.h" />
     <ClInclude Include="src\writecache.h" />
     <ClInclude Include="src\writer4samplequeue.h" />

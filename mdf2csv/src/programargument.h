@@ -37,8 +37,8 @@ class ProgramArgument final {
   [[nodiscard]] const std::vector<std::string>& InputFiles() const {
     return input_list_;
   }
-  void ShowHelp();
-  void ShowVersion();
+  void ShowHelp() const;
+  static void ShowVersion();
   void Clear();
  private:
   ProgramArgument();

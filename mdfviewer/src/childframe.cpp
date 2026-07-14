@@ -6,23 +6,25 @@
 
 #include <sstream>
 #include <filesystem>
+
 #include <wx/sizer.h>
 #include <wx/bitmap.h>
 #include "util/timestamp.h"
+#include "util/logstream.h"
 
 #include "mdfdocument.h"
 #include "hl4block.h"
 #include "dl4block.h"
 #include "windowid.h"
 #include "ca4block.h"
-#include "dt4block.h"
-#include "dt3block.h"
 #include "dz4block.h"
 #include "sr4block.h"
 #include "cn4block.h"
 
 
 using namespace mdf::detail;
+using namespace std::filesystem;
+using namespace util::log;
 
 namespace {
 #include "img/sub.xpm"
@@ -78,7 +80,11 @@ class BlockAddress : public wxTreeItemData {
 wxString CreateBlockText(const mdf::detail::MdfBlock&block) {
   std::ostringstream block_string;
   block_string << block.BlockType();
-  const auto comment = block.Comment();
+  std::string comment = block.Comment();
+  if (comment.size() > 20) {
+    // Truncate the comment
+    comment = comment.substr(0, 20) + "...";
+  }
   if (!comment.empty()) {
     block_string << " (" << comment << ")";
   }
@@ -202,6 +208,7 @@ ChildFrame::ChildFrame(wxDocument *doc,
   auto* main_sizer = new wxBoxSizer(wxVERTICAL);
   main_sizer->Add(splitter_, 1 , wxALL | wxGROW,0);
   main_panel->SetSizerAndFit(main_sizer);
+
 }
 
 void ChildFrame::RedrawTreeList() {
@@ -217,7 +224,7 @@ void ChildFrame::RedrawTreeList() {
     return;
   }
 
-  left_->AddRoot(reader->ShortName(), TREE_ROOT, TREE_ROOT);
+  left_->AddRoot(reader->WShortName(), TREE_ROOT, TREE_ROOT);
 
   const auto* file = doc->GetFile();
    if (file == nullptr) {
@@ -303,7 +310,7 @@ void ChildFrame::Update() {
   }
 }
 
-void ChildFrame::RedrawHistory(const detail::Hd4Block &hd, const wxTreeItemId &root) {
+void ChildFrame::RedrawHistory(const Hd4Block &hd, const wxTreeItemId &root) const {
   if (hd.Fh4().empty()) {
     return;
   }
@@ -359,7 +366,7 @@ void ChildFrame::RedrawHierarchy(const detail::Hd4Block &hd, const wxTreeItemId 
   }
 }
 
-void ChildFrame::RedrawAttachment(const detail::Hd4Block &hd, const wxTreeItemId &root) {
+void ChildFrame::RedrawAttachment(const detail::Hd4Block &hd, const wxTreeItemId &root) const {
   if (hd.At4().empty()) {
     return;
   }
@@ -383,7 +390,7 @@ void ChildFrame::RedrawAttachment(const detail::Hd4Block &hd, const wxTreeItemId
   }
 }
 
-void ChildFrame::RedrawEvent(const detail::Hd4Block &hd, const wxTreeItemId &root) {
+void ChildFrame::RedrawEvent(const detail::Hd4Block &hd, const wxTreeItemId &root) const {
   if (hd.Ev4().empty()) {
     return;
   }
@@ -1116,7 +1123,7 @@ void ChildFrame::RedrawListView() {
   long line = 0;
   for (const auto& prop : property_list_) {
     switch (prop.Type()) {
-      case mdf::detail::BlockItemType::HeaderItem:
+      case BlockItemType::HeaderItem:
       {
         auto index = property_view_->InsertItem(line, wxString::FromUTF8(prop.Label()));
         auto font = property_view_->GetItemFont(index);
@@ -1125,7 +1132,7 @@ void ChildFrame::RedrawListView() {
       }
       break;
 
-      case mdf::detail::BlockItemType::LinkItem:
+      case BlockItemType::LinkItem:
       {
         auto index = property_view_->InsertItem(line, wxString::FromUTF8(prop.Label()));
         if (prop.Link() > 0) {
@@ -1137,7 +1144,7 @@ void ChildFrame::RedrawListView() {
       }
       break;
 
-      case mdf::detail::BlockItemType::BlankItem:
+      case BlockItemType::BlankItem:
       {
         auto index = property_view_->InsertItem(line, "");
         property_view_->SetItem(index, 1, "");

@@ -12,18 +12,15 @@ if (MDF_BUILD_TEST)
     add_subdirectory(test)
 endif()
 
+include(${CMAKE_SOURCE_DIR}/script/boost.cmake)
+
+#find_package(Boost REQUIRED COMPONENTS program_options)
+
 add_executable(mdf2csv
     src/main.cpp
-        src/programargument.cpp
-        src/programargument.h
-        src/createfilelist.cpp
-        src/createfilelist.h
-        src/csvwriter.cpp
-        src/csvwriter.h
-        src/logtoconsole.cpp
-        src/logtoconsole.h)
-
-target_include_directories(mdf2csv PRIVATE ${XTENSOR_INCLUDE_DIRS})
+    src/programargument.cpp src/programargument.h
+    src/createfilelist.cpp src/createfilelist.h
+    src/logtoconsole.cpp src/logtoconsole.h)
 
 if(MSVC)
     target_compile_definitions(mdf2csv PRIVATE
@@ -36,10 +33,6 @@ elseif(MINGW)
 endif()
 
 target_link_libraries(mdf2csv PRIVATE mdf)
-
-
-find_package(Boost REQUIRED CONFIG COMPONENTS program_options)
-
 target_link_libraries(mdf2csv PRIVATE Boost::program_options)
 
 if(WIN32)

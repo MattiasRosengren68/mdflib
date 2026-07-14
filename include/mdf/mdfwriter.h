@@ -117,6 +117,9 @@ class MdfWriter {
     return write_state_;
   }
 
+  std::string Filename() const;
+
+
   /** \brief Init the writer against a file.
    *
    * Initiate the writer by defining which file it shall work with. Note that
@@ -126,7 +129,7 @@ class MdfWriter {
    * @return Returns true if the function was successful.
    */
   bool Init(const std::string& filename);
-
+  bool Init(const std::wstring& filename);
   /** \brief Initialize the writer against a  generic stream buffer.
    *
    * This function attach the internal stream buffer
@@ -178,7 +181,7 @@ class MdfWriter {
   bool CreateBusLogConfiguration();
   
   /** \brief Create a new data group (DG) block. */
-  [[nodiscard]] IDataGroup* CreateDataGroup();
+  [[nodiscard]] IDataGroup* CreateDataGroup() const;
   /** \brief Create a new channel group (CG) block. */
   [[nodiscard]] static IChannelGroup* CreateChannelGroup(IDataGroup* parent);
   /** \brief Creates a new channel (CN) block. */
@@ -383,6 +386,13 @@ class MdfWriter {
     return mandatory_members_only_;
   }
 
+  void CalculateBitAndByteOffsets(bool calculate_offsets) {
+    calculate_bit_and_byte_offsets_ = calculate_offsets;
+  }
+  [[nodiscard]] bool CalculateBitAndByteOffsets() const {
+    return calculate_bit_and_byte_offsets_;
+  }
+
  protected:
   MdfWriterType type_of_writer_ = MdfWriterType::Mdf4Basic;
   /** \brief Smart pointer to a stream buffer.
@@ -395,7 +405,7 @@ class MdfWriter {
 
 
   std::unique_ptr<MdfFile> mdf_file_;  ///< Holds the actual file object.
-  std::string filename_;  ///< Full name of file with path and extension.
+  std::wstring filename_;  ///< Full name of file with path and extension.
 
   std::atomic<uint64_t> pre_trig_time_ = 0;  ///< Nanoseconds difference.
   std::atomic<uint64_t> start_time_ = 0;     ///< Nanoseconds since 1970.
@@ -422,6 +432,8 @@ class MdfWriter {
   virtual void RecalculateTimeMaster() = 0;
   virtual void NotifySample() = 0;
 
+
+
   //void SetDataPosition();
 
  private:
@@ -431,6 +443,7 @@ class MdfWriter {
   MdfStorageType storage_type_ = MdfStorageType::FixedLengthStorage;
   uint32_t max_length_ = 8; ///< Max data byte storage
   bool mandatory_members_only_ = false;
+  bool calculate_bit_and_byte_offsets_ = true;
 
   [[nodiscard]] bool IsFirstMeasurement() const;
 

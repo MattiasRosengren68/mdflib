@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: MIT
  */
 #pragma once
-#include <cstdio>
+
+#include <cstdint>
 #include <string>
-#include <vector>
 
 #include "mdfblock.h"
 
@@ -13,7 +13,7 @@ namespace mdf::detail {
 class Ce3Block : public MdfBlock {
  public:
   uint64_t Read(std::streambuf& buffer) override;
-
+  void GetBlockProperty(BlockPropertyList& dest) const override;
  private:
   uint16_t type_ = 0;
 

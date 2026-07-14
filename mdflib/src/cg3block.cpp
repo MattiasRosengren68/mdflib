@@ -5,10 +5,12 @@
 #include "cg3block.h"
 
 #include <algorithm>
-#include <cstdio>
+#include <cstdint>
 
 #include "mdf/idatagroup.h"
 #include "mdf/mdflogstream.h"
+
+#include "tx3block.h"
 
 namespace {
 
@@ -46,7 +48,14 @@ uint64_t Cg3Block::RecordId() const { return record_id_; }
 
 std::vector<IChannel *> Cg3Block::Channels() const {
   std::vector<IChannel *> channel_list;
-  std::for_each(cn_list_.begin(), cn_list_.end(),
+  std::for_each(cn_list_.cbegin(), cn_list_.cend(),
+                [&](const auto &cn) { channel_list.push_back(cn.get()); });
+  return channel_list;
+}
+
+std::vector<IChannel *> Cg3Block::TopLevelChannels() const {
+  std::vector<IChannel *> channel_list;
+  std::for_each(cn_list_.cbegin(), cn_list_.cend(),
                 [&](const auto &cn) { channel_list.push_back(cn.get()); });
   return channel_list;
 }

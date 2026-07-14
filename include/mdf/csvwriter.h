@@ -7,6 +7,7 @@
 
 #include <string>
 #include <fstream>
+
 #include <mdf/mdfreader.h>
 
 namespace mdf {

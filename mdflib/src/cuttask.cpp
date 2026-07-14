@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "sortingtask.h"
+#include "cuttask.h"
 
 #include <exception>
 #include <filesystem>
@@ -22,13 +22,13 @@
 #include "mdf/mdfwriter.h"
 #include "mdf/ifilehistory.h"
 #include "mdf/fhcomment.h"
-
+#include "mdf/mdproperty.h"
 
 using namespace std::filesystem;
 
 namespace mdf {
 
-void SortingTask::Run() {
+void CutTask::Run() {
   try {
     Result(false);
     CheckSourceFile();
@@ -37,7 +37,7 @@ void SortingTask::Run() {
     CheckSourceAndDestinationDiff();
     ReadConfig();
     CreateWriter();
-    SortFile();
+    CutFile();
     CopyTempFile();
     DeleteTempFile();
     Error(false);
@@ -52,7 +52,7 @@ void SortingTask::Run() {
   }
 }
 
-void SortingTask::SortFile() {
+void CutTask::CutFile() {
   const std::string& source_path = SourceFile();
   const std::string& destination_path = DestinationFile();
   const std::string& temp_path = TempFile();
@@ -65,6 +65,10 @@ void SortingTask::SortFile() {
     if (!reader_ || !writer_) {
       throw std::runtime_error("Reader or writer is not initialized.");
     }
+    // The writer normally calculate bit and byte offsets for each channel.
+    // As we are using the sample observer, the bit and byte offsets have to be
+    // the same as in the source file.
+    // We need to turn off the automatic offset calculation.
     writer_->CalculateBitAndByteOffsets(false);
     CopyMainConfig();
 
@@ -74,20 +78,34 @@ void SortingTask::SortFile() {
         + SourceFile());
     }
     start_time_ = source_header->StartTime();
+
     IHeader* dest_header = writer_->Header();
     if (dest_header == nullptr) {
       throw std::invalid_argument("Failed to get the destination header. File: "
         + TempFile());
     }
+
     AppendHistory();
-    size_t dest_dg_count = 0;
+
     const auto source_dg_list = source_header->DataGroups();
     for (IDataGroup* source_dg : source_dg_list) {
       if (source_dg == nullptr) {
         continue;
       }
-      std::deque<std::unique_ptr<CopySampleObserver>> observer_list;
 
+      std::deque<std::unique_ptr<CopySampleObserver>> observer_list;
+      IDataGroup* dest_dg = dest_header->CreateDataGroup();
+      if (dest_dg == nullptr) {
+        throw std::logic_error(
+          "Failed to create the destination data group. File: "
+            + TempFile());
+      }
+
+      if (source_dg->MetaData() != nullptr) {
+        DgComment comment;
+        source_dg->GetDgComment(comment);
+        dest_dg->SetDgComment(comment);
+      }
       const auto source_cg_list = source_dg->ChannelGroups();
       for (const IChannelGroup* source_cg : source_cg_list) {
         if (source_cg == nullptr) {
@@ -100,23 +118,6 @@ void SortingTask::SortFile() {
         if (SkipIfNoSamples() && source_cg->NofSamples() == 0) {
           continue;
         }
-
-        IDataGroup* dest_dg = dest_header->CreateDataGroup();
-        if (dest_dg == nullptr) {
-          throw std::logic_error(
-            "Failed to create the destination data group. File: "
-              + TempFile());
-        }
-        ++dest_dg_count;
-        DgComment comment;
-        source_dg->GetDgComment(comment);
-        if (comment.Comment().IsEmpty()) {
-          std::ostringstream oss;
-          oss << "Measurement " << dest_dg_count;
-          comment.Comment(oss.str());
-        }
-        dest_dg->SetDgComment(comment);
-
         IChannelGroup* dest_cg = CopyChannelConfig(*source_cg, *dest_dg);
         if (dest_cg == nullptr) {
           throw std::logic_error(
@@ -124,21 +125,31 @@ void SortingTask::SortFile() {
               + source_cg->Name());
         }
         if (source_cg->NofSamples() > 0) {
-          observer_list.push_back(std::make_unique<CopySampleObserver>(
+          auto observer = std::make_unique<CopySampleObserver>(
             *source_dg, *source_cg,
               start_time_, *writer_,
-              *dest_dg, *dest_cg));
+              *dest_dg, *dest_cg);
+          if (observer) {
+            observer->SetTimeRange(MinTime(), MaxTime());
+            observer_list.emplace_back(std::move(observer));
+          }
+
         }
-      }
+      } // End of channel group list
 
       const bool init_meas = writer_->InitMeasurement();
       if (!init_meas) {
         throw std::runtime_error(
           "Failed to initialize the measurement. File: " + TempFile());
       }
-      writer_->StartMeasurement(start_time_);
+      uint64_t start_time = start_time_;
+      if (RecalculateTime()) {
+        const auto time_offset = static_cast<int64_t>(MinTime() * 1'000'000'000);
+        start_time += time_offset;
+      }
+      writer_->StartMeasurement(start_time);
       reader_->ReadData(*source_dg);
-      uint64_t stop_time = start_time_;
+      uint64_t stop_time = start_time;
       for (auto& sample_observer : observer_list) {
         if (sample_observer && sample_observer->GetSampleTime() > stop_time) {
           stop_time = sample_observer->GetSampleTime();
@@ -151,11 +162,7 @@ void SortingTask::SortFile() {
         throw std::runtime_error(
           "Failed to finalize the measurement. File: " + TempFile());
       }
-
     }
-
-
-
   } catch (const std::exception& err) {
     std::ostringstream oss;
     oss << "Failed to sort the file. Error: " << err.what();
@@ -165,7 +172,7 @@ void SortingTask::SortFile() {
 
 }
 
-void SortingTask::ReadInData(IDataGroup& data_group, const IChannelGroup& channel_group) {
+void CutTask::ReadInData(IDataGroup& data_group, const IChannelGroup& channel_group) {
   if (!reader_) {
     throw std::runtime_error("Reader is not initialized.");
   }
@@ -182,7 +189,7 @@ void SortingTask::ReadInData(IDataGroup& data_group, const IChannelGroup& channe
   sample_time_ = start_time_;
 }
 
-void SortingTask::CopyData(const IChannelGroup& source_cg,
+void CutTask::CopyData(const IChannelGroup& source_cg,
                            const IChannelGroup& dest_cg) {
   if (!writer_) {
     throw std::runtime_error("Writer is not initialized.");
@@ -269,7 +276,7 @@ void SortingTask::CopyData(const IChannelGroup& source_cg,
 
 }
 
-void SortingTask::AppendHistory() const {
+void CutTask::AppendHistory() const {
   if (!writer_) {
     throw std::runtime_error("Writer is not initialized.");
   }
@@ -281,19 +288,37 @@ void SortingTask::AppendHistory() const {
   }
 
   // Add extra FH block that have info about this cutting task.
-  IFileHistory* sort_history = dest_header->CreateFileHistory();
-  if (sort_history == nullptr) {
+  IFileHistory* cut_history = dest_header->CreateFileHistory();
+  if (cut_history == nullptr) {
     throw std::runtime_error("Failed to create the MDF file history.");
   }
-  sort_history->Time(MdfHelper::NowNs());
+  cut_history->Time(MdfHelper::NowNs());
 
-  FhComment fh_comment("Sorting MDF File");
+  FhComment fh_comment("Changed Time Range");
   {
-    MdProperty skip_prop;
-    skip_prop.Name("Skipping Groups Without Samples");
-    skip_prop.DataType(MdDataType::MdBoolean);
-    skip_prop.Value(SkipIfNoSamples());
-    fh_comment.AddProperty(skip_prop);
+    MdProperty min_prop;
+    min_prop.Name("Min Time");
+    min_prop.DataType(MdDataType::MdFloat);
+    min_prop.Value(MinTime());
+    min_prop.Unit("s");
+    fh_comment.AddProperty(min_prop);
+  }
+
+  {
+    MdProperty max_prop;
+    max_prop.Name("Max Time");
+    max_prop.DataType(MdDataType::MdFloat);
+    max_prop.Value(MaxTime());
+    max_prop.Unit("s");
+    fh_comment.AddProperty(max_prop);
+  }
+
+  {
+    MdProperty recalc_prop;
+    recalc_prop.Name("Recalculate Time");
+    recalc_prop.DataType(MdDataType::MdBoolean);
+    recalc_prop.Value(RecalculateTime());
+    fh_comment.AddProperty(recalc_prop);
   }
 
   {
@@ -304,6 +329,7 @@ void SortingTask::AppendHistory() const {
     fh_comment.AddProperty(orig_prop);
   }
 
-  sort_history->SetFhComment(fh_comment);
+  cut_history->SetFhComment(fh_comment);
 }
-}  // namespace mdf
+
+} // mdf

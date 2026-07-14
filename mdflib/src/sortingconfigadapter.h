@@ -16,6 +16,10 @@ public:
   explicit SortingConfigAdapter(const MdfWriter& writer, MdfReader& reader);
   void CreateConfig(IHeader& header) override;
 
+
+  void CopyHeader(IHeader& header) const;
+  void CopyAttachments(IHeader& header) const;
+  void CopyFileHistories(IHeader& header) const;
 private:
   MdfReader& reader_;
 };

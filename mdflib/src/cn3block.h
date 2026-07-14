@@ -3,15 +3,17 @@
  * SPDX-License-Identifier: MIT
  */
 #pragma once
+
+#include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "cc3block.h"
 #include "cd3block.h"
 #include "ce3block.h"
 #include "datalistblock.h"
 #include "mdf/ichannel.h"
-#include "tx3block.h"
 
 namespace mdf::detail {
 class Cg3Block;
@@ -78,7 +80,7 @@ class Cn3Block : public DataListBlock, public IChannel {
   [[nodiscard]] uint32_t ByteOffset() const override;
   
   IChannel* CreateChannelComposition() override;
-  std::vector<IChannel*> ChannelCompositions() override;
+  std::vector<IChannel*> ChannelCompositions() const override;
 
   const IChannelGroup* ChannelGroup() const override;
 
@@ -86,6 +88,7 @@ class Cn3Block : public DataListBlock, public IChannel {
   [[nodiscard]] ElementLink DefaultX() const override;
 
   void CopyFrom(const IChannel& source) override;
+  void CopyConfigFrom(const IChannel& source) override;
  protected:
 
   [[nodiscard]] std::vector<uint8_t>& SampleBuffer() const override;

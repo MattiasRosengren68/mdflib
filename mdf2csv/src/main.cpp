@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
   }
 
   if (arguments.Version()) {
-    arguments.ShowVersion();
+    ProgramArgument::ShowVersion();
     return EXIT_SUCCESS;
   }
 
