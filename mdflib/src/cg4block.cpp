@@ -696,8 +696,7 @@ Cn4Block *Cg4Block::FindSdChannel() const {
     std::find_if(cn_list.begin(), cn_list.end(),
       [](const auto* channel) {
     return channel != nullptr &&
-           channel->Type() == ChannelType::VariableLength &&
-           channel->VlsdRecordId() == 0;
+           channel->Type() == ChannelType::VariableLength;
   });
 
   if (itr == cn_list.end()) {

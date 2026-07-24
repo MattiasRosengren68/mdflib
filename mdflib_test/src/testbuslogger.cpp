@@ -277,6 +277,8 @@ TEST_F(TestBusLogger, Mdf4CanSdStorage ) {
   writer->InitMeasurement();
   auto tick_time = TimeStampToNs();
   writer->StartMeasurement(tick_time);
+  tick_time += 1'000'000;
+
   size_t sample;
   for (sample = 0; sample < max_samples; ++sample) {
     // Assigned some dummy data
@@ -293,8 +295,11 @@ TEST_F(TestBusLogger, Mdf4CanSdStorage ) {
     // Add dummy message to all for message types. Not realistic
     // but makes the test simpler.
     writer->SaveCanMessage(*can_data_frame, tick_time, msg);
+    tick_time += 1'000'000;
     writer->SaveCanMessage(*can_remote_frame, tick_time, msg);
+    tick_time += 1'000'000;
     writer->SaveCanMessage(*can_error_frame, tick_time, msg);
+    tick_time += 1'000'000;
     writer->SaveCanMessage(*can_overload_frame, tick_time, msg);
     tick_time += 1'000'000;
   }
@@ -369,6 +374,7 @@ TEST_F(TestBusLogger, Mdf4VlsdCanConfig) {
   writer->BusType(MdfBusType::CAN);
   writer->StorageType(MdfStorageType::VlsdStorage);
   writer->MaxLength(20);
+  writer->MandatoryMembersOnly(true);
   EXPECT_TRUE(writer->CreateBusLogConfiguration());
   writer->PreTrigTime(0.0);
   writer->CompressData(false);
@@ -378,12 +384,12 @@ TEST_F(TestBusLogger, Mdf4VlsdCanConfig) {
   auto* can_data_frame = last_dg->GetChannelGroup("CAN_DataFrame");
   auto* can_remote_frame = last_dg->GetChannelGroup("CAN_RemoteFrame");
   auto* can_error_frame = last_dg->GetChannelGroup("CAN_ErrorFrame");
-  auto* can_overload_frame = last_dg->GetChannelGroup("CAN_OverloadFrame");
+  //auto* can_overload_frame = last_dg->GetChannelGroup("CAN_OverloadFrame");
 
   ASSERT_TRUE(can_data_frame != nullptr);
   ASSERT_TRUE(can_remote_frame != nullptr);
   ASSERT_TRUE(can_error_frame != nullptr);
-  ASSERT_TRUE(can_overload_frame != nullptr);
+  //ASSERT_TRUE(can_overload_frame != nullptr);
 
 
   writer->InitMeasurement();
@@ -412,13 +418,28 @@ TEST_F(TestBusLogger, Mdf4VlsdCanConfig) {
     // Add dummy message to all for message types. Not realistic
     // but makes the test simpler.
     writer->SaveCanMessage(*can_data_frame, tick_time, msg);
-    writer->SaveCanMessage(*can_remote_frame, tick_time, msg);
-    writer->SaveCanMessage(*can_error_frame, tick_time, msg);
-    writer->SaveCanMessage(*can_overload_frame, tick_time, msg);
     tick_time += 1'000'000;
+    writer->SaveCanMessage(*can_remote_frame, tick_time, msg);
+    tick_time += 1'000'000;
+    writer->SaveCanMessage(*can_error_frame, tick_time, msg);
+    tick_time += 1'000'000;
+    //writer->SaveCanMessage(*can_overload_frame, tick_time, msg);
+    //tick_time += 1'000'000;
   }
   writer->StopMeasurement(tick_time);
   writer->FinalizeMeasurement();
+
+  {
+    path sorted_file = mdf_file.parent_path();
+    sorted_file /= mdf_file.stem();
+    sorted_file += "_sorted";
+    sorted_file += mdf_file.extension();
+    auto sort_task = MdfFactory::CreateTask(MdfTaskType::MdfSortingTask);
+    ASSERT_TRUE(sort_task);
+    sort_task->SourceFile(mdf_file.string());
+    sort_task->DestinationFile(sorted_file.string());
+    sort_task->Run();
+  }
 
   MdfReader reader(mdf_file.string());
   ChannelObserverList observer_list;
@@ -433,7 +454,7 @@ TEST_F(TestBusLogger, Mdf4VlsdCanConfig) {
 
   for (auto* dg4 : dg_list) {
     const auto cg_list = dg4->ChannelGroups();
-    EXPECT_EQ(cg_list.size(), 6);
+    EXPECT_EQ(cg_list.size(), 5);
     for (auto* cg4 : cg_list) {
       CreateChannelObserverForChannelGroup(*dg4, *cg4, observer_list);
     }

@@ -43,7 +43,7 @@ const std::vector<uint8_t>& FlexRayFrame::DataBytes() const {
 void FlexRayFrame::ToRaw(SampleRecord& sample) const {
   const bool mandatory_members_only = data_group_ != nullptr ?
                      data_group_->MandatoryMembersOnly() : false;
-  const size_t record_size = mandatory_members_only ? 24 : 34;
+  const size_t record_size = mandatory_members_only ? 22 : 32;
 
   // Get a reference to the fixed size record buffer and size it
   auto& record = sample.record_buffer;
@@ -95,7 +95,7 @@ const std::vector<uint8_t>& FlexRayPdu::DataBytes() const {
 void FlexRayPdu::ToRaw(SampleRecord& sample) const {
   const bool mandatory_members_only = data_group_ != nullptr ?
                    data_group_->MandatoryMembersOnly() : false;
-  const size_t record_size = mandatory_members_only ? 24 : 28;
+  const size_t record_size = mandatory_members_only ? 22 : 28;
 
   // Get a reference to the fixed size record buffer and size it
   auto& record = sample.record_buffer;
@@ -144,7 +144,7 @@ const std::vector<uint8_t>& FlexRayFrameHeader::FillDataBytes() const {
 void FlexRayFrameHeader::ToRaw(SampleRecord& sample) const {
   const bool mandatory_members_only = data_group_ != nullptr ?
                       data_group_->MandatoryMembersOnly() : false;
-  const size_t record_size = mandatory_members_only ? 13 : 34;
+  const size_t record_size = mandatory_members_only ? 13 : 32;
 
   // Get a reference to the fixed size record buffer and size it
   auto& record = sample.record_buffer;
@@ -191,7 +191,7 @@ FlexRayNullFrame::FlexRayNullFrame()
 void FlexRayNullFrame::ToRaw(SampleRecord& sample) const {
   const bool mandatory_members_only = data_group_ != nullptr ?
                                                              data_group_->MandatoryMembersOnly() : false;
-  const size_t record_size = mandatory_members_only ? 12 : 34;
+  const size_t record_size = mandatory_members_only ? 12 : 32;
 
   // Get a reference to the fixed size record buffer and size it
   auto& record = sample.record_buffer;

@@ -49,7 +49,7 @@ class FlexRayConfigAdapter : public IConfigAdapter {
   * <tr><td>19:3</td><td>Sync Frame Flag (boolean)</td></tr>
   * <tr><td>19:4</td><td>Startup Frame Flag (boolean)</td></tr>
   * <tr><td>20-23</td><td>Frame Length in ns</td></tr>
-  * <tr><td>24-33</td><td>Offset to VLSD/SD (64-bit). Must be last</td></tr>
+  * <tr><td>24-31</td><td>Offset to VLSD/SD (64-bit). Must be last</td></tr>
   * </table>
   * @param data_group Reference to the data group.
    */
@@ -119,7 +119,7 @@ class FlexRayConfigAdapter : public IConfigAdapter {
     * <tr><td>19:3</td><td>Sync Frame Flag (boolean)</td></tr>
     * <tr><td>19:4</td><td>Startup Frame Flag (boolean)</td></tr>
     * <tr><td>20-23</td><td>Frame Length in ns</td></tr>
-    * <tr><td>24-33</td><td>Offset to VLSD/SD (64-bit). Must be last</td></tr>
+    * <tr><td>24-31</td><td>Offset to VLSD/SD (64-bit). Must be last</td></tr>
     * </table>
     * @param data_group Reference to the data group.
      */
@@ -156,7 +156,7 @@ class FlexRayConfigAdapter : public IConfigAdapter {
   * <tr><td>19:3</td><td>Sync Frame Flag (boolean)</td></tr>
   * <tr><td>19:4</td><td>Startup Frame Flag (boolean)</td></tr>
   * <tr><td>20-23</td><td>Frame Length in ns</td></tr>
-  * <tr><td>24-33</td><td>Offset to VLSD/SD (64-bit). Must be last</td></tr>
+  * <tr><td>24-31</td><td>Offset to VLSD/SD (64-bit). Must be last</td></tr>
   * </table>
   * @param data_group Reference to the data group.
      */
@@ -197,7 +197,7 @@ class FlexRayConfigAdapter : public IConfigAdapter {
   * <tr><td>20:0</td><td>TX Conflict Flag (boolean)</td></tr>
   * <tr><td>20:1</td><td>Valid Flag (boolean)</td></tr>
   * <tr><td>21-24</td><td>Frame Length in ns</td></tr>
-  * <tr><td>25-34</td><td>Offset to VLSD/SD (64-bit). Must be last</td></tr>
+  * <tr><td>25-33</td><td>Offset to VLSD/SD (64-bit). Must be last</td></tr>
   * </table>
   * @param data_group Reference to the data group.
      */

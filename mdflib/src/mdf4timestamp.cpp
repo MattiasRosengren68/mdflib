@@ -44,9 +44,13 @@ uint64_t Mdf4Timestamp::Write(std::streambuf& buffer) {
 
 void Mdf4Timestamp::SetTime(uint64_t time) {
   time_ = time;
-  tz_offset_ = 0;
-  dst_offset_ = 0;
+
+  dst_offset_ = static_cast<int16_t>(MdfHelper::DstOffsetNs()/60'000'000'000);
+  tz_offset_ = static_cast<int16_t>(MdfHelper::TimeZoneOffset() / 60);
+  tz_offset_ -= dst_offset_;
+
   flags_ = TimestampFlag::kUtcTimestamp;
+  flags_ |= TimestampFlag::kTimeOffsetValid;
 }
 void Mdf4Timestamp::SetTime(ITimestamp &timestamp) {
   time_ = timestamp.GetTimeNs();

@@ -6,6 +6,7 @@
 #pragma once
 
 #include "samplequeue.h"
+#include "cn4block.h"
 
 namespace mdf::detail {
 
@@ -31,7 +32,8 @@ class Writer4SampleQueue : public SampleQueue {
 
   void SetLastPosition(std::streambuf& buffer) override;
 
-
+  static void UpdateSdIndex(const Cn4Block& cn4, uint64_t sd_index,
+    SampleRecord& sample);
 };
 
 }  // namespace mdf

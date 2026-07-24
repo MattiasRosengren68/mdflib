@@ -2,7 +2,6 @@
 * Copyright 2025 Ingemar Hedvall
 * SPDX-License-Identifier: MIT
  */
-#include <string_view>
 #include "mdf/flexrayconfigadapter.h"
 
 #include "mdf/ichannel.h"
@@ -192,9 +191,9 @@ void FlexRayConfigAdapter::CreateFrameChannel(IChannelGroup& channel_group) cons
   parent_frame->Type(ChannelType::FixedLength);
   parent_frame->Sync(ChannelSyncType::None);
   if (mandatory_members_only) {
-    parent_frame->DataBytes(24-8);
+    parent_frame->DataBytes(22-8);
   } else {
-    parent_frame->DataBytes(34-8);
+    parent_frame->DataBytes(32-8);
   }
   parent_frame->Flags(CnFlag::BusEvent);
   parent_frame->DataType(ChannelDataType::ByteArray);
@@ -245,7 +244,7 @@ void FlexRayConfigAdapter::CreatePduChannel(IChannelGroup& channel_group) const 
   parent_frame->Type(ChannelType::FixedLength);
   parent_frame->Sync(ChannelSyncType::None);
   if (mandatory_members_only) {
-    parent_frame->DataBytes(24-8);
+    parent_frame->DataBytes(22-8);
   } else {
     parent_frame->DataBytes(28-8);
   }
@@ -294,7 +293,7 @@ void FlexRayConfigAdapter::CreateFrameHeaderChannel(IChannelGroup& channel_group
   if (mandatory_members_only) {
     parent_frame->DataBytes(13-8);
   } else {
-    parent_frame->DataBytes(34-8);
+    parent_frame->DataBytes(32-8);
   }
   parent_frame->Flags(CnFlag::BusEvent);
   parent_frame->DataType(ChannelDataType::ByteArray);
@@ -347,7 +346,7 @@ void FlexRayConfigAdapter::CreateNullFrameChannel(IChannelGroup& channel_group) 
   if (mandatory_members_only) {
     parent_frame->DataBytes(12-8);
   } else {
-    parent_frame->DataBytes(34-8);
+    parent_frame->DataBytes(32-8);
   }
   parent_frame->Flags(CnFlag::BusEvent);
   parent_frame->DataType(ChannelDataType::ByteArray);

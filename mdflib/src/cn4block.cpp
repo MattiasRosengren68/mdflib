@@ -1277,7 +1277,7 @@ uint64_t Cn4Block::WriteSdSample(const std::vector<uint8_t> &buffer) const  {
   auto index = static_cast<uint64_t>(data_list_.size());
 
   // 32-bits length
-  const LittleBuffer<uint32_t> length(static_cast<uint32_t>(buffer.size()));
+  const LittleBuffer length(static_cast<uint32_t>(buffer.size()));
   data_list_.insert(data_list_.end(),length.cbegin(), length.cend());
   // Now add data bytes
   data_list_.insert(data_list_.end(),buffer.cbegin(), buffer.cend());
