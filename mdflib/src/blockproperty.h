@@ -16,8 +16,8 @@ enum class BlockItemType {
 
 class BlockProperty final {
  public:
-  explicit BlockProperty(const std::string& label, const std::string& value,
-                         const std::string& desc = {},
+  explicit BlockProperty(std::string  label, std::string  value,
+                         std::string  desc = {},
                          BlockItemType type = BlockItemType::NormalItem);
 
   [[nodiscard]] const std::string& Label() const { return label_; }

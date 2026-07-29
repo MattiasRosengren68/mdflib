@@ -13,15 +13,18 @@
 
 #include "util/logstream.h"
 #include "util/csvwriter.h"
+
+#include "mdf/isamplereduction.h"
+#include "mdf/mdflogstream.h"
+
 #include "mdfdocument.h"
 #include "windowid.h"
 #include "mdfviewer.h"
-#include <mdf/isamplereduction.h>
+
 #include "channelobserverframe.h"
 #include "samplereductionframe.h"
 #include "cn4block.h"
-
-
+#include "mainframe.h"
 
 using namespace util::log;
 using namespace mdf;
@@ -181,6 +184,29 @@ bool MdfDocument::OnOpenDocument(const wxString &filename) {
                  wxOK | wxCENTRE | wxICON_ERROR);
   }
   return parse && wxDocument::OnOpenDocument(filename);
+}
+
+void MdfDocument::SetSelectedBlockId(int64_t id, int64_t parent_id,
+                                     int64_t grand_parent_id) {
+  selected_id_ = id;
+  parent_id_ = parent_id;
+  grand_parent_id_ = grand_parent_id;
+  const auto* block = GetBlock(id);
+
+  wxApp& app = wxGetApp();
+  auto* main_frame = dynamic_cast<MainFrame*>(app.GetTopWindow());
+  if (main_frame != nullptr && block != nullptr) {
+    wxStatusBar* status_bar = main_frame->GetStatusBar();
+    if (status_bar != nullptr) {
+      std::ostringstream status_text;
+      status_text << "Index: " << block->Index()
+        << ", Type: " << block->BlockType()
+        << ", Length: " << block->BlockLength();
+      status_bar->SetStatusText(status_text.str());
+    }
+  }
+
+
 }
 
 mdf::detail::MdfBlock*MdfDocument::GetBlock(int64_t id) const {
@@ -571,31 +597,40 @@ void MdfDocument::OnUpdateShowSrData(wxUpdateUIEvent &event) {
 }
 
 void MdfDocument::OnPlotChannelData(wxCommandEvent &) {
-  IDataGroup* dg = nullptr;
-  IChannelGroup* cg = nullptr;
-  IChannel* cn = nullptr;
+  auto& app = wxGetApp();
+  if (app.GnuPlot().empty()) {
+    MDF_ERROR() << "No gnuplot application available";
+    return;
+  }
 
   const auto selected_id = GetSelectedBlockId();
   auto *selected_block = GetBlock(selected_id);
-  if (selected_block != nullptr && selected_block->BlockType() == "CN") {
-    cn = dynamic_cast<IChannel*>(selected_block);
-  }
-
-  const auto parent_id = GetParentBlockId();
-  auto *parent_block = GetBlock(parent_id);
-  if (parent_block != nullptr && parent_block->BlockType() == "CG") {
-    cg = dynamic_cast<IChannelGroup*>(parent_block);
-  }
-
-  const auto grand_parent_id = GetGrandParentBlockId();
-  auto *grand_parent_block = GetBlock(grand_parent_id);
-  if (grand_parent_block != nullptr && grand_parent_block->BlockType() == "DG") {
-    dg = dynamic_cast<IDataGroup*>(grand_parent_block);
-  }
-  auto& app = wxGetApp();
-  if (dg == nullptr || cg == nullptr || cn == nullptr || app.GnuPlot().empty()) {
+  if (selected_block == nullptr) {
+    MDF_ERROR() << "No selected block found";
     return;
   }
+
+  const IChannel* cn = nullptr;
+  if (selected_block->BlockType() == "CN") {
+    cn = dynamic_cast<IChannel*>(selected_block);
+  }
+  if (cn == nullptr) {
+    MDF_ERROR() << "The selected block is not a channel. Block Type: "
+        << selected_block->BlockType();
+    return;
+  }
+
+  const IChannelGroup* cg = cn->ChannelGroup();
+  if (cg == nullptr) {
+    MDF_ERROR() << "No channel group found. Channel: " << cn->Name();
+    return;
+  }
+
+  auto* dg = const_cast<IDataGroup*>(cg->DataGroup());
+  if (dg == nullptr) {
+    return;
+  }
+
   const auto* x_axis = cg->GetXChannel(*cn); // Need to show the master channel as well as the data channel
 
   std::ostringstream title;

@@ -4,13 +4,17 @@
  */
 #pragma once
 #include <map>
+#include "mdf/iblock.h"
 #include "datablock.h"
 #include "vlsddata.h"
 
 namespace mdf::detail {
 
-class Sd4Block : public DataBlock {
+class Sd4Block : public DataBlock, public IBlock {
  public:
+  [[nodiscard]] int64_t Index() const override;
+  [[nodiscard]] std::string BlockType() const override;
+
   uint64_t Read(std::streambuf& buffer) override;
   uint64_t Write(std::streambuf& buffer) override;
 

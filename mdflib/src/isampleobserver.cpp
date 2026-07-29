@@ -52,11 +52,27 @@ bool ISampleObserver::OnSample(uint64_t sample, uint64_t record_id,
 void ISampleObserver::FindVlsdRecord(const IChannelGroup& channel_group) {
   const auto channel_list = channel_group.Channels();
   for (const auto* channel : channel_list) {
-    if (channel == nullptr) {
+    if (channel == nullptr ||
+         channel->Type() != ChannelType::VariableLength ||
+         channel->DataType() != ChannelDataType::ByteArray)  {
       continue;
     }
-    if (channel->VlsdRecordId() > 0) {
-      record_id_list_.insert(channel->VlsdRecordId());
+    // The signal data index point to either a CG VLSD record or a SD(HL/DL/DZ) block
+    // MDF 3 doesn't support VLSD.
+    IBlock* sd_block = channel->GetVlsdBlock();
+    if (sd_block == nullptr) {
+      continue;
+    }
+    if (sd_block->BlockType() == "CG") {
+      // The VLSD link is pointing on a CG block
+      if (auto* cg_block = dynamic_cast<IChannelGroup*>(sd_block);
+          cg_block != nullptr) {
+        record_id_list_.insert(cg_block->RecordId());
+        cg_vlsd_list_.emplace(channel, cg_block);
+      }
+    } else {
+      // The VLSD link is pointing on a SD/HL/DL or DZ block
+      sd_vlsd_list_.emplace_back(channel);
     }
   }
 }

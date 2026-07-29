@@ -54,12 +54,14 @@ target_link_libraries(mdfview PRIVATE mdf)
 
 include(${CMAKE_SOURCE_DIR}/script/boost.cmake)
 include(${CMAKE_SOURCE_DIR}/script/wxwidgets.cmake)
+include(${CMAKE_SOURCE_DIR}/script/wxmathplot.cmake)
 
 target_link_libraries(mdfview PRIVATE
     Boost::process
     Boost::filesystem
     Boost::locale
     wxWidgets::wxWidgets
+    wxmathplot_static
 )
 
 

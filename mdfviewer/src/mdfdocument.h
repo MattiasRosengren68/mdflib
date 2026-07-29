@@ -34,11 +34,7 @@ class MdfDocument : public wxDocument {
     return reader_.get();
   }
 
-  void SetSelectedBlockId(int64_t id, int64_t parent_id, int64_t grand_parent_id) {
-    selected_id_ = id;
-    parent_id_ = parent_id;
-    grand_parent_id_ = grand_parent_id;
-  }
+  void SetSelectedBlockId(int64_t id, int64_t parent_id, int64_t grand_parent_id);
 
   [[nodiscard]] int64_t GetSelectedBlockId() const {
     return selected_id_;

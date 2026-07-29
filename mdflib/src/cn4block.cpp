@@ -212,6 +212,7 @@ std::vector<int64_t> Cn4Block::XAxisLinkList() const {
 }
 
 int64_t Cn4Block::Index() const { return FilePosition(); }
+std::string Cn4Block::BlockType() const { return MdfBlock::BlockType(); }
 
 void Cn4Block::Name(const std::string &name) { name_ = name; }
 
@@ -282,6 +283,53 @@ uint8_t Cn4Block::Decimals() const {
 }
 
 bool Cn4Block::IsDecimalUsed() const { return flags_ & CnFlag::PrecisionValid; }
+
+IBlock* Cn4Block::GetVlsdBlock() const {
+  if (!block_list_.empty()) {
+    const auto& sd_block = block_list_[0];
+    if (!sd_block) {
+      return nullptr;
+    }
+    const std::string block_type = sd_block->BlockType();
+    if (block_type == "SD") {
+      return dynamic_cast<Sd4Block*>(sd_block.get());
+    }
+    if (block_type == "HL") {
+      return dynamic_cast<Hl4Block*>(sd_block.get());
+    }
+    if (block_type == "DL") {
+      return dynamic_cast<Dl4Block*>(sd_block.get());
+    }
+    if (block_type == "DZ") {
+      return dynamic_cast<Dz4Block*>(sd_block.get());
+    }
+    return nullptr;
+  }
+
+  const int64_t data_position = DataLink();
+  if (data_position <= 0) {
+    return nullptr;
+  }
+  const IChannelGroup* channel_group = ChannelGroup();
+  if (channel_group == nullptr) {
+    return nullptr;
+  }
+
+ const auto* data_group = dynamic_cast<const Dg4Block*>(
+   channel_group->DataGroup());
+ if (data_group == nullptr) {
+   return nullptr;
+ }
+
+ MdfBlock* data_block = data_group->Find(data_position);
+ if (data_block == nullptr) {
+   return nullptr;
+ }
+ if (data_block->BlockType() == "CG") {
+   return dynamic_cast<Cg4Block*>(data_block);
+ }
+ return nullptr;
+}
 
 bool Cn4Block::IsUnitValid() const {
   const bool invalid = Link(kIndexUnit) == 0 && !unit_;

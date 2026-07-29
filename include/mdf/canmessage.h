@@ -49,6 +49,8 @@ class IDataGroup;
  */
 class CanMessage {
  public:
+    CanMessage() = default;
+    explicit CanMessage(MessageType type);
     void TypeOfMessage(MessageType type) const { message_type_ = type; }
     [[nodiscard]] MessageType TypeOfMessage() const { return message_type_; };
 

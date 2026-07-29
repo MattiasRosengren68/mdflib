@@ -60,7 +60,9 @@ add_executable(test_mdf
         src/testmdftask.cpp
         src/testmdftask.h
         src/testdefaultx.cpp
-        src/testmdfhelper.cpp)
+        src/testmdfhelper.cpp
+        src/testsortingdata.cpp
+        src/testsortingdata.h)
 
 target_include_directories(test_mdf PRIVATE ../include ../mdflib/src)
 target_include_directories(test_mdf PRIVATE ${utillib_SOURCE_DIR}/include)

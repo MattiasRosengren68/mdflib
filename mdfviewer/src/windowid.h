@@ -18,4 +18,5 @@ constexpr wxWindowID kIdEventList = 11;
 constexpr wxWindowID kIdAttachmentList = 12;
 constexpr wxWindowID kIdHierarchyList = 13;
 constexpr wxWindowID kIdShowSrData = 14;
+constexpr wxWindowID kIdMainFrameTimer = 15;
 }

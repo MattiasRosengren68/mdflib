@@ -3,6 +3,11 @@
  * SPDX-License-Identifier: MIT
  */
 #pragma once
+
+#include <string_view>
+#include <cstdint>
+
+#include "mdf/iblock.h"
 #include "datalistblock.h"
 namespace mdf::detail {
 
@@ -20,8 +25,11 @@ enum class Hl4ZipType : uint8_t {
   TransposeAndDeflate = 1
 };
 
-class Hl4Block : public DataListBlock {
+class Hl4Block : public DataListBlock, public IBlock {
  public:
+  [[nodiscard]] int64_t Index() const override;
+  [[nodiscard]] std::string BlockType() const override;
+
   void Flags(uint16_t flags) { flags_ = flags; }
   [[nodiscard]] uint16_t Flags() const { return flags_; }
 
@@ -29,6 +37,7 @@ class Hl4Block : public DataListBlock {
   [[nodiscard]] Hl4ZipType Type() const {
     return static_cast<Hl4ZipType>(type_);
   }
+  [[nodiscard]] std::string_view TypeAsString() const;
 
   void GetBlockProperty(BlockPropertyList& dest) const override;
   uint64_t Read(std::streambuf& buffer) override;

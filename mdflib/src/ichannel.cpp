@@ -1102,6 +1102,11 @@ std::vector<const IAttachment *> IChannel::AttachmentList() const {
   return {};
 }
 
+IBlock *IChannel::GetVlsdBlock() const {
+  // This is the MDF 3 functionality. No VLSD data support
+  return nullptr;
+}
+
 uint64_t IChannel::ArraySize() const {
   const auto array_list = ChannelArrays();
   if (array_list.empty()) {

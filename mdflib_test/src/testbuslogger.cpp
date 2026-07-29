@@ -1248,4 +1248,149 @@ TEST_F(TestBusLogger, Mdf4CanObserver ) {
 TEST_F(TestBusLogger, ErrorDetected) {
   EXPECT_FALSE(kErrorDetected);
 }
+
+TEST_F(TestBusLogger, TestCanData) {
+  if (kSkipTest) {
+    GTEST_SKIP();
+  }
+  constexpr size_t max_sample = 10;
+  const std::vector<uint8_t> sample_data({0xAA, 0xBB});
+  path mdf_file(kTestDir);
+  mdf_file.append("can_data.mf4");
+
+
+  {
+    auto writer = MdfFactory::CreateMdfWriter(MdfWriterType::MdfBusLogger);
+    ASSERT_TRUE(writer);
+    writer->Init(mdf_file.string());
+
+    auto* header = writer->Header();
+    ASSERT_TRUE(header != nullptr);
+    HdComment hd_comment("Test of CAN Data");
+    hd_comment.Author("Ingemar Hedvall");
+    hd_comment.Department("IH Development");
+    hd_comment.Project("CAN bus support");
+    hd_comment.Subject("Testing CAN support");
+    hd_comment.TimeSource(MdString("PC UTC Time"));
+    header->SetHdComment(hd_comment);
+
+    auto* history = header->CreateFileHistory();
+    ASSERT_TRUE(history != nullptr);
+    FhComment fh_comment("Initial file change");
+    fh_comment.ToolId("Google Unit Test");
+    fh_comment.ToolVendor("ACME Road Runner Company");
+    fh_comment.ToolVersion("1.0");
+    fh_comment.UserName("ihedvall");
+    history->SetFhComment(fh_comment);
+
+    writer->BusType(MdfBusType::CAN);
+    writer->StorageType(MdfStorageType::VlsdStorage);
+    writer->PreTrigTime(0.0);
+    writer->CompressData(false);
+    writer->MandatoryMembersOnly(false);
+    // Create a DG block
+    auto* last_dg = header->CreateDataGroup();
+    ASSERT_TRUE(last_dg != nullptr);
+
+    // Create a MOST
+    CanConfigAdapter can_config(*writer);
+    can_config.CreateConfig(*last_dg);
+
+    IChannelGroup* can_frame = last_dg->GetChannelGroup("CAN_DataFrame");
+    ASSERT_TRUE(can_frame != nullptr);
+
+    IChannelGroup* error_frame = last_dg->GetChannelGroup("CAN_ErrorFrame");
+    ASSERT_TRUE(error_frame != nullptr);
+
+    writer->InitMeasurement();
+    uint64_t tick_time = TimeStampToNs();
+    writer->StartMeasurement(tick_time);
+
+    for (size_t sample = 0; sample < max_sample; ++sample) {
+
+      CanMessage d_frame(MessageType::CAN_DataFrame);
+      d_frame.DataBytes(sample_data);
+
+      CanMessage e_frame(MessageType::CAN_ErrorFrame);
+      e_frame.DataBytes(sample_data);
+
+      writer->SaveCanMessage(*last_dg, *can_frame, tick_time, d_frame);
+      tick_time += 1'000'000;
+      writer->SaveCanMessage(*last_dg, *error_frame, tick_time, e_frame);
+      tick_time += 1'000'000;
+    }
+
+    writer->StopMeasurement(tick_time);
+    writer->FinalizeMeasurement();
+  }
+
+  path sorted_file = mdf_file.parent_path();
+  sorted_file /= mdf_file.stem();
+  sorted_file += "_sorted";
+  sorted_file += mdf_file.extension();
+  {
+    auto sortTask =
+            mdf::MdfFactory::CreateTask(mdf::MdfTaskType::MdfSortingTask);
+
+    sortTask->SourceFile(mdf_file.string());
+
+    sortTask->DestinationFile(sorted_file.string());
+    sortTask->SkipIfNoSamples(true);
+    sortTask->Run();
+  }
+
+  {
+    MdfReader reader(sorted_file.string());
+    ChannelObserverList observer_list;
+
+    ASSERT_TRUE(reader.IsOk());
+    ASSERT_TRUE(reader.ReadEverythingButData());
+    const MdfFile* file = reader.GetFile();
+    ASSERT_TRUE(file != nullptr);
+
+    const IHeader* header = file->Header();
+    ASSERT_TRUE(header != nullptr);
+
+    const auto dg_list = header->DataGroups();
+    EXPECT_EQ(dg_list.size(), 2);
+
+    for (IDataGroup* data_group : dg_list) {
+      ASSERT_TRUE(data_group != nullptr);
+
+      const auto cg_list = data_group->ChannelGroups();
+      EXPECT_EQ(cg_list.size(), 1);
+      for (IChannelGroup* channel_group : cg_list) {
+        ASSERT_TRUE(channel_group != nullptr);
+        CreateChannelObserverForChannelGroup(*data_group, *channel_group,
+                                             observer_list);
+      }
+      reader.ReadData(*data_group);
+      bool data_ok = false;
+      for (auto& observer : observer_list) {
+        ASSERT_TRUE(observer);
+        const uint64_t nof_samples = observer->NofSamples();
+
+        EXPECT_EQ(nof_samples, max_sample);
+        const auto& channel = observer->Channel();
+        if (channel.DataType() != ChannelDataType::ByteArray ||
+            channel.Type() != ChannelType::VariableLength) {
+          continue;
+        }
+        for (uint64_t sample = 0; sample < max_sample; ++sample) {
+          std::vector<uint8_t> value_list;
+          const bool valid = observer->GetEngValue(sample, value_list);
+          EXPECT_TRUE(valid) << "Sample: " << sample;
+          EXPECT_EQ(value_list, sample_data);
+          data_ok = true;
+        }
+
+      }
+      EXPECT_TRUE(data_ok);
+    }
+    reader.Close();
+  }
+
+}
+
+
 }  // namespace mdf::test

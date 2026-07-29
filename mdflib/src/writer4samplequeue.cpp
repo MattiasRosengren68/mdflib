@@ -80,22 +80,22 @@ void Writer4SampleQueue::SaveQueue(std::unique_lock<std::mutex>& lock) {
       continue;
     }
     lock.unlock();
-    auto* cn4 = sample.vlsd_data ? cg4->FindSdChannel() : nullptr;
-    const uint64_t vlsd_record_id = cn4 != nullptr ?
-        cn4->VlsdRecordId() : sample.record_id + 1;
-    auto* vlsd_group = sample.vlsd_data ?
-          dg4->FindCgRecordId(vlsd_record_id) : nullptr;
+    Cn4Block* cn4 = sample.vlsd_data ? cg4->FindSdChannel() : nullptr;
+    Cg4Block* vlsd_group = FindVlsdCg4Block(dg4, cn4,sample);
+
     // If the sample holds VLSD data, save this data first and then update
     // the data index. VLSD data is stored in SD or CG. A dirty trick is that
     // the VLSD CG must have the next record_id
     if (vlsd_group != nullptr && cn4 != nullptr) {
       // Store as a VLSD record
-      const auto vlsd_index = vlsd_group->WriteVlsdSample(*writer_.file_, id_size,
+      const uint64_t vlsd_index = vlsd_group->WriteVlsdSample(*writer_.file_, id_size,
                                                           sample.vlsd_buffer);
       UpdateSdIndex(*cn4, vlsd_index, sample);
     } else if (cn4 != nullptr) {
       // Store as SD data on VLSD channel
-      const auto vlsd_index = cn4->WriteSdSample(sample.vlsd_buffer);
+      const uint64_t vlsd_index = cn4->WriteSdSample(sample.vlsd_buffer);
+      // Update the sample buffer with the new vlsd_index. Index is always
+      // last 8 bytes in sample buffer
       UpdateSdIndex(*cn4, vlsd_index, sample);
     }
 
@@ -213,6 +213,7 @@ void Writer4SampleQueue::CleanQueueCompressed(std::unique_lock<std::mutex>& lock
         dl4->DataBlockList().push_back(std::move(dz4));
 
         buffer.clear();
+        buffer.shrink_to_fit();
         buffer.reserve(buffer_max);
       } else {
 
@@ -233,10 +234,8 @@ void Writer4SampleQueue::CleanQueueCompressed(std::unique_lock<std::mutex>& lock
     // If the sample have vlsd data, it could be stored in the next VLSD CG or
     // in a SD block.
     auto* cn4 = sample.vlsd_data ? cg4->FindSdChannel() : nullptr;
-    const uint64_t vlsd_record_id = cn4 != nullptr ?
-        cn4->VlsdRecordId() : sample.record_id + 1;
-    auto* vlsd_group = sample.vlsd_data ?
-          dg4->FindCgRecordId(vlsd_record_id) : nullptr;
+    auto* vlsd_group = FindVlsdCg4Block(dg4,cn4,sample);
+
     // If the sample holds VLSD data, save this data first and then update
     // the data index. VLSD data is stored in SD or CG. A dirty trick is that
     // the VLSD CG must have the next record_id
@@ -318,6 +317,22 @@ void Writer4SampleQueue::UpdateSdIndex(const Cn4Block& cn4, uint64_t sd_index,
     std::copy(buff.cbegin(), buff.cend(),
               std::next(sample.record_buffer.begin(), index_pos));
   }
+}
+
+Cg4Block* Writer4SampleQueue::FindVlsdCg4Block(const Dg4Block* dg4,
+                                               const Cn4Block* cn4,
+                                               const SampleRecord& sample) const {
+  if (dg4 == nullptr || !sample.vlsd_data ||
+      writer_.StorageType() != MdfStorageType::VlsdStorage) {
+    return nullptr;
+  }
+  const uint64_t vlsd_record_id = cn4 != nullptr ? cn4->VlsdRecordId() :
+                                                  sample.record_id + 1;
+  Cg4Block* vlsd_group = dg4->FindCgRecordId(vlsd_record_id);
+  if (vlsd_group != nullptr && (vlsd_group->Flags() & CgFlag::VlsdChannel) == 0) {
+    vlsd_group = nullptr;
+  }
+  return vlsd_group;
 }
 
 }  // namespace mdf::detail

@@ -3,6 +3,11 @@
  * SPDX-License-Identifier: MIT
  */
 #pragma once
+
+#include <cstdint>
+#include <vector>
+
+#include "mdf/iblock.h"
 #include "datalistblock.h"
 
 namespace mdf::detail {
@@ -13,8 +18,10 @@ constexpr uint8_t AngleValues = 0x04;
 constexpr uint8_t DistanceValues = 0x08;
 }
 
-class Dl4Block : public DataListBlock {
+class Dl4Block : public DataListBlock, public IBlock {
  public:
+  [[nodiscard]] int64_t Index() const override;
+  [[nodiscard]] std::string BlockType() const override;
   void GetBlockProperty(BlockPropertyList& dest) const override;
   uint64_t Read(std::streambuf& buffer) override;
   uint64_t Write(std::streambuf& buffer) override;

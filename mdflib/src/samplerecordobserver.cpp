@@ -43,6 +43,15 @@ bool SampleRecordObserver::OnSample(uint64_t sample, uint64_t record_id,
       last_sample_.timestamp += static_cast<int64_t>(rel_time * 1'000'000'000);
     }
     sample_time_ = last_sample_.timestamp;
+    if (!sd_vlsd_list_.empty()) {
+      // VLSD data is stored in a channels signa data block.
+      // This handle by the channel object
+      if (const IChannel* vlsd_channel = sd_vlsd_list_.front();
+          vlsd_channel != nullptr) {
+        last_sample_.vlsd_data = true;
+        vlsd_channel->GetChannelValue(record,last_sample_.vlsd_buffer);
+      }
+    }
   } else {
     last_sample_.vlsd_data = true;
     last_sample_.vlsd_buffer = record;

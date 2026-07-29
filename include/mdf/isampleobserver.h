@@ -227,6 +227,9 @@ class ISampleObserver {
  protected:
   std::set<uint64_t> record_id_list_; ///< List of subscribed channel groups.
 
+  std::map<const IChannel*, IChannelGroup*> cg_vlsd_list_;
+  std::vector<const IChannel*> sd_vlsd_list_;
+
   const IDataGroup* DataGroup() const { return data_group_; } ///< Returns the data group.
   void FindVlsdRecord(const IChannelGroup& channel_group);
  private:
