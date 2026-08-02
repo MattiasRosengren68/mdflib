@@ -589,5 +589,132 @@ TEST_F(TestMostLogger, MostCompressStorage) {
   }
 }
 
+TEST_F(TestMostLogger, TestCustomConfig) {
+  if (kSkipTest) {
+    GTEST_SKIP();
+  }
+
+  constexpr size_t max_sample = 10;
+  const std::vector<uint8_t> sample_data({0xAA, 0xBB});
+  path mdf_file(kTestDir);
+  mdf_file.append("most_custom_sorted.mf4");
+  {
+    auto writer = MdfFactory::CreateMdfWriter(MdfWriterType::MdfBusLogger);
+    ASSERT_TRUE(writer);
+    writer->Init(mdf_file.string());
+
+    auto* header = writer->Header();
+    ASSERT_TRUE(header != nullptr);
+    HdComment hd_comment("Test of MOST Custom Config");
+    hd_comment.Author("Ingemar Hedvall");
+    hd_comment.Department("IH Development");
+    hd_comment.Project("MOST bus support");
+    hd_comment.Subject("Testing MOST support");
+    hd_comment.TimeSource(MdString("PC UTC Time"));
+    header->SetHdComment(hd_comment);
+
+    auto* history = header->CreateFileHistory();
+    ASSERT_TRUE(history != nullptr);
+    FhComment fh_comment("Initial file change");
+    fh_comment.ToolId("Google Unit Test");
+    fh_comment.ToolVendor("ACME Road Runner Company");
+    fh_comment.ToolVersion("1.0");
+    fh_comment.UserName("ihedvall");
+    history->SetFhComment(fh_comment);
+
+    writer->BusType(MdfBusType::MOST);
+    writer->StorageType(MdfStorageType::FixedLengthStorage);
+    writer->PreTrigTime(0.0);
+    writer->CompressData(false);
+    writer->MandatoryMembersOnly(false);
+
+    MostConfigAdapter most_config(*writer);
+     // Create a DG block
+    IDataGroup* dg_message = header->CreateDataGroup();
+    ASSERT_TRUE(dg_message != nullptr);
+    IChannelGroup* most_message = most_config.CreateCustomConfig(
+      *dg_message, MostMessageType::Message);
+    ASSERT_TRUE(most_message != nullptr);
+
+    IDataGroup* dg_packet = header->CreateDataGroup();
+    ASSERT_TRUE(dg_packet != nullptr);
+    IChannelGroup* most_packet = most_config.CreateCustomConfig(
+      *dg_packet, MostMessageType::Packet);
+    ASSERT_TRUE(most_message != nullptr);
+
+    writer->InitMeasurement();
+    uint64_t tick_time = TimeStampToNs();
+    writer->StartMeasurement(tick_time);
+
+    for (size_t sample = 0; sample < max_sample; ++sample) {
+
+      MostMessage m_frame;
+      m_frame.DataBytes(sample_data);
+
+      MostPacket p_frame;
+      p_frame.DataBytes(sample_data);
+
+      writer->SaveMostMessage(*dg_message, *most_message, tick_time, m_frame);
+      tick_time += 1'000'000;
+      writer->SaveMostMessage(*dg_packet, *most_packet, tick_time, p_frame);
+      tick_time += 1'000'000;
+    }
+
+    writer->StopMeasurement(tick_time);
+    writer->FinalizeMeasurement();
+  }
+
+  {
+    MdfReader reader(mdf_file.string());
+    ChannelObserverList observer_list;
+
+    ASSERT_TRUE(reader.IsOk());
+    ASSERT_TRUE(reader.ReadEverythingButData());
+    const MdfFile* file = reader.GetFile();
+    ASSERT_TRUE(file != nullptr);
+
+    const IHeader* header = file->Header();
+    ASSERT_TRUE(header != nullptr);
+
+    const auto dg_list = header->DataGroups();
+    EXPECT_EQ(dg_list.size(), 2);
+
+    for (IDataGroup* data_group : dg_list) {
+      ASSERT_TRUE(data_group != nullptr);
+
+      const auto cg_list = data_group->ChannelGroups();
+      EXPECT_EQ(cg_list.size(), 1);
+      for (IChannelGroup* channel_group : cg_list) {
+        ASSERT_TRUE(channel_group != nullptr);
+        CreateChannelObserverForChannelGroup(*data_group, *channel_group,
+                                             observer_list);
+      }
+      reader.ReadData(*data_group);
+      bool data_ok = false;
+      for (auto& observer : observer_list) {
+        ASSERT_TRUE(observer);
+        const uint64_t nof_samples = observer->NofSamples();
+
+        EXPECT_EQ(nof_samples, max_sample);
+        const auto& channel = observer->Channel();
+        if (channel.DataType() == ChannelDataType::ByteArray &&
+            (channel.Type() == ChannelType::VariableLength ||
+             channel.Type() == ChannelType::MaxLength) ) {
+          for (uint64_t sample = 0; sample < max_sample; ++sample) {
+            std::vector<uint8_t> value_list;
+            const bool valid = observer->GetEngValue(sample, value_list);
+            EXPECT_TRUE(valid) << "Sample: " << sample;
+            EXPECT_EQ(value_list, sample_data);
+            data_ok = true;
+          }
+        }
+      }
+      EXPECT_TRUE(data_ok);
+    }
+    reader.Close();
+  }
+
+}
+
 
 }  // namespace mdf

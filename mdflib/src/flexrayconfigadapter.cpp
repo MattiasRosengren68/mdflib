@@ -34,11 +34,53 @@ void FlexRayConfigAdapter::CreateConfig(IDataGroup& dg_block) {
   CreateFlxSymbol(dg_block);
 }
 
-void FlexRayConfigAdapter::CreateFlxFrame(IDataGroup& data_group) const {
+IChannelGroup* FlexRayConfigAdapter::CreateCustomConfig(IDataGroup& dg_block,
+  FlexRayMessageType type) {
+  // Transfer internal properties to the data and channel groups.
+  dg_block.MandatoryMembersOnly(MandatoryMembersOnly());
+  if (StorageType() == MdfStorageType::MlsdStorage) {
+    StorageType(MdfStorageType::VlsdStorage);
+    MDF_INFO() << "Storage type MLSD is not supported for FlexRay buses. "
+               << "Changing to VLSD storage.";
+  }
+  IChannelGroup* channel_group = nullptr;
+  switch (type) {
+    case FlexRayMessageType::Frame:
+      channel_group = CreateFlxFrame(dg_block);
+      break;
+
+    case FlexRayMessageType::Pdu:
+      channel_group = CreateFlxPdu(dg_block);
+      break;
+
+    case FlexRayMessageType::FrameHeader:
+      channel_group = CreateFlxFrameHeader(dg_block);
+      break;
+
+    case FlexRayMessageType::NullFrame:
+      channel_group = CreateFlxNullFrame(dg_block);
+      break;
+
+    case FlexRayMessageType::ErrorFrame:
+      channel_group = CreateFlxErrorFrame(dg_block);
+      break;
+
+    case FlexRayMessageType::Symbol:
+      channel_group = CreateFlxSymbol(dg_block);
+      break;
+
+    default:
+      break;
+  }
+  return channel_group;
+}
+
+
+IChannelGroup* FlexRayConfigAdapter::CreateFlxFrame(IDataGroup& data_group) const {
   const IChannel* cn_data_byte = nullptr;
-  if (IChannelGroup* cg_message = data_group.CreateChannelGroup(
+  IChannelGroup* cg_message = data_group.CreateChannelGroup(
           MakeGroupName("Frame"));
-      cg_message != nullptr) {
+  if (cg_message != nullptr) {
     cg_message->PathSeparator('.');
     cg_message->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
     CreateTimeChannel(*cg_message,"t");
@@ -58,13 +100,14 @@ void FlexRayConfigAdapter::CreateFlxFrame(IDataGroup& data_group) const {
       cn_data_byte->VlsdRecordId(cg_samples_frame->RecordId());
     }
   }
+  return cg_message;
 }
 
-void FlexRayConfigAdapter::CreateFlxPdu(IDataGroup& data_group) const {
+IChannelGroup* FlexRayConfigAdapter::CreateFlxPdu(IDataGroup& data_group) const {
   const IChannel* cn_data_byte = nullptr;
-  if (IChannelGroup* cg_message = data_group.CreateChannelGroup(
+  IChannelGroup* cg_message = data_group.CreateChannelGroup(
           MakeGroupName("Pdu"));
-      cg_message != nullptr) {
+  if (cg_message != nullptr) {
     cg_message->PathSeparator('.');
     cg_message->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
     CreateTimeChannel(*cg_message,"t");
@@ -84,13 +127,14 @@ void FlexRayConfigAdapter::CreateFlxPdu(IDataGroup& data_group) const {
       cn_data_byte->VlsdRecordId(cg_samples_frame->RecordId());
     }
   }
+  return cg_message;
 }
 
-void FlexRayConfigAdapter::CreateFlxFrameHeader(IDataGroup& data_group) const {
+IChannelGroup* FlexRayConfigAdapter::CreateFlxFrameHeader(IDataGroup& data_group) const {
   const IChannel* cn_data_byte = nullptr;
-  if (IChannelGroup* cg_message = data_group.CreateChannelGroup(
+  IChannelGroup* cg_message = data_group.CreateChannelGroup(
           MakeGroupName("FrameHeader"));
-      cg_message != nullptr) {
+  if (cg_message != nullptr) {
     cg_message->PathSeparator('.');
     cg_message->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
     CreateTimeChannel(*cg_message,"t");
@@ -111,13 +155,14 @@ void FlexRayConfigAdapter::CreateFlxFrameHeader(IDataGroup& data_group) const {
       cn_data_byte->VlsdRecordId(cg_samples_frame->RecordId());
     }
   }
+  return cg_message;
 }
 
-void FlexRayConfigAdapter::CreateFlxNullFrame(IDataGroup& data_group) const {
+IChannelGroup* FlexRayConfigAdapter::CreateFlxNullFrame(IDataGroup& data_group) const {
   const IChannel* cn_data_byte = nullptr;
-  if (IChannelGroup* cg_message = data_group.CreateChannelGroup(
+  IChannelGroup* cg_message = data_group.CreateChannelGroup(
           MakeGroupName("NullFrame"));
-      cg_message != nullptr) {
+  if (cg_message != nullptr) {
     cg_message->PathSeparator('.');
     cg_message->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
     CreateTimeChannel(*cg_message,"t");
@@ -138,13 +183,14 @@ void FlexRayConfigAdapter::CreateFlxNullFrame(IDataGroup& data_group) const {
       cn_data_byte->VlsdRecordId(cg_samples_frame->RecordId());
     }
   }
+  return cg_message;
 }
 
-void FlexRayConfigAdapter::CreateFlxErrorFrame(IDataGroup& data_group) const {
+IChannelGroup* FlexRayConfigAdapter::CreateFlxErrorFrame(IDataGroup& data_group) const {
   const IChannel* cn_data_byte = nullptr;
-  if (IChannelGroup* cg_message = data_group.CreateChannelGroup(
+  IChannelGroup* cg_message = data_group.CreateChannelGroup(
           MakeGroupName("ErrorFrame"));
-      cg_message != nullptr) {
+  if (cg_message != nullptr) {
     cg_message->PathSeparator('.');
     cg_message->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
     CreateTimeChannel(*cg_message,"t");
@@ -165,19 +211,21 @@ void FlexRayConfigAdapter::CreateFlxErrorFrame(IDataGroup& data_group) const {
       cn_data_byte->VlsdRecordId(cg_samples_frame->RecordId());
     }
   }
+  return cg_message;
 }
 
-void FlexRayConfigAdapter::CreateFlxSymbol(IDataGroup& data_group) const{
+IChannelGroup* FlexRayConfigAdapter::CreateFlxSymbol(IDataGroup& data_group) const{
 
-  if (IChannelGroup* cg_message = data_group.CreateChannelGroup(
+  IChannelGroup* cg_message = data_group.CreateChannelGroup(
           MakeGroupName("Symbol"));
-      cg_message != nullptr) {
+  if (cg_message != nullptr) {
     cg_message->PathSeparator('.');
     cg_message->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
     CreateTimeChannel(*cg_message,"t");
     CreateSymbolChannel(*cg_message);
     CreateSourceInformation(*cg_message);
   }
+  return cg_message;
 }
 
 void FlexRayConfigAdapter::CreateFrameChannel(IChannelGroup& channel_group) const {

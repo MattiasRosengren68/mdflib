@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "mdf/ichannel.h"
 #include "mdf/samplerecord.h"

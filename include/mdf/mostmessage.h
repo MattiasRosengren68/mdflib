@@ -157,9 +157,9 @@ class MostEthernetPacket : public IMostEvent {
   void TxAck(uint8_t ack) { tx_ack_ = ack; }
   [[nodiscard]] uint8_t TxAck() const { return tx_ack_; }
 
- protected:
   void ToRaw(SampleRecord& sample) const override;
 
+ protected:
   explicit MostEthernetPacket(MostMessageType type);
 
  private:
@@ -185,9 +185,9 @@ class MostPacket : public MostEthernetPacket {
   void PacketIndex(uint8_t packet_index) { packet_index_ = packet_index; }
   [[nodiscard]] uint8_t PacketIndex() const { return packet_index_;}
 
+  void ToRaw(SampleRecord& sample) const override;
  protected:
   explicit MostPacket(MostMessageType type);
-  void ToRaw(SampleRecord& sample) const override;
 
  private:
   uint8_t packet_index_ = 0;
@@ -203,7 +203,6 @@ class MostMessage : public MostPacket {
   void ControlMessageType(MostControlMessageType type) { control_message_type_ = type; }
   [[nodiscard]] MostControlMessageType ControlMessageType() const { return control_message_type_;}
 
- protected:
   void ToRaw(SampleRecord& sample) const override;
  private:
   bool tx_failed_ = false;
@@ -217,10 +216,9 @@ class MostSignalState : public IMostEvent {
   void SignalState(MostStateOfSignal state) { state_ = state; }
   [[nodiscard]] MostStateOfSignal SignalState() const { return state_; }
 
- protected:
   void ToRaw(SampleRecord& sample) const override;
 
- private:
+private:
   MostStateOfSignal state_ = MostStateOfSignal::Unknown;
 };
 
@@ -231,7 +229,6 @@ class MostMaxPosInfo : public IMostEvent {
   void DeviceCount(uint8_t count) { device_count_ = count; }
   [[nodiscard]] uint8_t DeviceCount() const { return device_count_; }
 
- protected:
   void ToRaw(SampleRecord& sample) const override;
 
  private:
@@ -245,7 +242,6 @@ class MostBoundDesc : public IMostEvent {
   void BoundaryCount(uint16_t count) { boundary_count_ = count; }
   [[nodiscard]] uint16_t BoundaryCount() const { return boundary_count_; }
 
- protected:
   void ToRaw(SampleRecord& sample) const override;
 
  private:
@@ -265,7 +261,6 @@ class MostAllocTable : public IMostEvent {
   void TableData(std::vector<uint8_t> bytes);
   [[nodiscard]] const std::vector<uint8_t>& TableData() const;
 
- protected:
   void ToRaw(SampleRecord& sample) const override;
 
  private:
@@ -281,7 +276,6 @@ class MostSysLockState : public IMostEvent {
   void RingIsClosed(bool closed) { ring_is_closed_ = closed; }
   [[nodiscard]] bool RingIsClosed() const { return ring_is_closed_; }
 
- protected:
   void ToRaw(SampleRecord& sample) const override;
 
  private:
@@ -295,7 +289,6 @@ class MostShutdownFlag : public IMostEvent {
   void ShutdownFlag(bool shutdown) { shutdown_flag_ = shutdown; }
   [[nodiscard]] bool ShutdownFlag() const { return shutdown_flag_; }
 
- protected:
   void ToRaw(SampleRecord& sample) const override;
 
  private:

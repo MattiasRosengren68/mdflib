@@ -61,15 +61,11 @@ uint64_t WriteStr(std::streambuf& buffer, const std::string &source, uint64_t si
 template <typename T>
 std::string ToHexString(const T &value) {
   std::ostringstream temp;
+  // std::locale is messing around and adding spaces
+  temp.imbue(std::locale::classic());
   temp << "0x" << std::uppercase
    << std::hex << static_cast<int64_t>(value);
   std::string hex_text = temp.str();
-  // std::locale is messing around and adding spaces
-  [[maybe_unused]] auto dummy_itr =
-    std::remove_if(hex_text.begin() + 2, hex_text.end(),
-   [] (unsigned char c)-> bool {
-     return !std::isdigit(c);
-   });
    return hex_text;
 }
 

@@ -10,6 +10,11 @@
 #include "littlebuffer.h"
 
 namespace mdf {
+EthMessage::EthMessage(EthMessageType msg_type) :
+EthMessage() {
+  MessageType(msg_type);
+}
+
 EthMessage::EthMessage(const MdfWriter& writer)
 : EthMessage() {
 

@@ -294,6 +294,7 @@ std::string MdfHelper::FormatDouble(double value, uint8_t decimals, bool fixed,
 
 std::string MdfHelper::FormatHex(uint64_t value) {
   std::ostringstream temp;
+  temp.imbue(std::locale::classic());
   temp << "0x"<< std::hex << std::uppercase << value;
   return temp.str();
 }

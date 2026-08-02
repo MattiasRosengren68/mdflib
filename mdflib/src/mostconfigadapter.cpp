@@ -37,11 +37,64 @@ void MostConfigAdapter::CreateConfig(IDataGroup& dg_block) {
   CreateMostShutdownFlag(dg_block);
 }
 
-void MostConfigAdapter::CreateMostMessage(IDataGroup& data_group) const {
+IChannelGroup* MostConfigAdapter::CreateCustomConfig(IDataGroup& dg_block,
+          MostMessageType type) {
+  // Transfer internal properties to the data and channel groups.
+  dg_block.MandatoryMembersOnly(MandatoryMembersOnly());
+  if (StorageType() == MdfStorageType::MlsdStorage) {
+    StorageType(MdfStorageType::VlsdStorage);
+    MDF_INFO() << "Storage type MLSD is not supported for MOST buses. "
+               << "Changing to VLSD storage.";
+  }
+  IChannelGroup* channel_group = nullptr;
+  switch (type) {
+    case MostMessageType::Message:
+      channel_group = CreateMostMessage(dg_block);
+      break;
+
+    case MostMessageType::Packet:
+      channel_group = CreateMostPacket(dg_block);
+      break;
+
+    case MostMessageType::EthernetPacket:
+      channel_group = CreateMostEthernetPacket(dg_block);
+      break;
+
+    case MostMessageType::SignalState:
+      channel_group = CreateMostSignalState(dg_block);
+      break;
+
+    case MostMessageType::MaxPosInfo:
+      channel_group = CreateMostMaxPosInfo(dg_block);
+      break;
+
+    case MostMessageType::BoundDesc:
+      channel_group = CreateMostBoundDesc(dg_block);
+      break;
+
+    case MostMessageType::AllocTable:
+      channel_group = CreateMostAllocTable(dg_block);
+      break;
+
+    case MostMessageType::SysLockState:
+      channel_group = CreateMostSysLockState(dg_block);
+      break;
+
+    case MostMessageType::ShutdownFlag:
+      channel_group = CreateMostShutdownFlag(dg_block);
+      break;
+
+    default:
+      break;
+  }
+  return channel_group;
+}
+
+IChannelGroup* MostConfigAdapter::CreateMostMessage(IDataGroup& data_group) const {
   const IChannel* cn_data_byte = nullptr;
-  if (IChannelGroup* cg_message = data_group.CreateChannelGroup(
+  IChannelGroup* cg_message = data_group.CreateChannelGroup(
           MakeGroupName("Message"));
-      cg_message != nullptr) {
+  if (cg_message != nullptr) {
     cg_message->PathSeparator('.');
     cg_message->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
     CreateTimeChannel(*cg_message,"t");
@@ -61,13 +114,14 @@ void MostConfigAdapter::CreateMostMessage(IDataGroup& data_group) const {
       cn_data_byte->VlsdRecordId(cg_samples_frame->RecordId());
     }
   }
+  return cg_message;
 }
 
-void MostConfigAdapter::CreateMostPacket(IDataGroup& data_group) const {
+IChannelGroup* MostConfigAdapter::CreateMostPacket(IDataGroup& data_group) const {
   const IChannel* cn_data_byte = nullptr;
-  if (IChannelGroup* cg_message = data_group.CreateChannelGroup(
+  IChannelGroup* cg_message = data_group.CreateChannelGroup(
           MakeGroupName("Packet"));
-      cg_message != nullptr) {
+  if (cg_message != nullptr) {
     cg_message->PathSeparator('.');
     cg_message->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
     CreateTimeChannel(*cg_message,"t");
@@ -87,14 +141,15 @@ void MostConfigAdapter::CreateMostPacket(IDataGroup& data_group) const {
       cn_data_byte->VlsdRecordId(cg_samples_frame->RecordId());
     }
   }
+  return cg_message;
 }
 
 
-void MostConfigAdapter::CreateMostEthernetPacket(IDataGroup& data_group) const {
+IChannelGroup* MostConfigAdapter::CreateMostEthernetPacket(IDataGroup& data_group) const {
   const IChannel* cn_data_byte = nullptr;
-  if (IChannelGroup* cg_message = data_group.CreateChannelGroup(
+  IChannelGroup* cg_message = data_group.CreateChannelGroup(
           MakeGroupName("EthernetPacket"));
-      cg_message != nullptr) {
+  if (cg_message != nullptr) {
     cg_message->PathSeparator('.');
     cg_message->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
     CreateTimeChannel(*cg_message,"t");
@@ -114,49 +169,53 @@ void MostConfigAdapter::CreateMostEthernetPacket(IDataGroup& data_group) const {
       cn_data_byte->VlsdRecordId(cg_samples_frame->RecordId());
     }
   }
+  return cg_message;
 }
 
-void MostConfigAdapter::CreateMostSignalState(IDataGroup& data_group) const {
-  if (IChannelGroup* cg_message = data_group.CreateChannelGroup(
+IChannelGroup* MostConfigAdapter::CreateMostSignalState(IDataGroup& data_group) const {
+  IChannelGroup* cg_message = data_group.CreateChannelGroup(
           MakeGroupName("SignalState"));
-      cg_message != nullptr) {
+  if (cg_message != nullptr) {
     cg_message->PathSeparator('.');
     cg_message->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
     CreateTimeChannel(*cg_message,"t");
     CreateSignalStateChannel(*cg_message);
     CreateSourceInformation(*cg_message);
   }
+  return cg_message;
 }
 
-void MostConfigAdapter::CreateMostMaxPosInfo(IDataGroup& data_group) const {
-  if (IChannelGroup* cg_message = data_group.CreateChannelGroup(
+IChannelGroup* MostConfigAdapter::CreateMostMaxPosInfo(IDataGroup& data_group) const {
+  IChannelGroup* cg_message = data_group.CreateChannelGroup(
           MakeGroupName("MaxPosInfo"));
-      cg_message != nullptr) {
+  if (cg_message != nullptr) {
     cg_message->PathSeparator('.');
     cg_message->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
     CreateTimeChannel(*cg_message,"t");
     CreateMaxPosInfoChannel(*cg_message);
     CreateSourceInformation(*cg_message);
   }
+  return cg_message;
 }
 
-void MostConfigAdapter::CreateMostBoundDesc(IDataGroup& data_group) const {
-  if (IChannelGroup* cg_message = data_group.CreateChannelGroup(
+IChannelGroup* MostConfigAdapter::CreateMostBoundDesc(IDataGroup& data_group) const {
+  IChannelGroup* cg_message = data_group.CreateChannelGroup(
           MakeGroupName("BoundDesc"));
-      cg_message != nullptr) {
+  if (cg_message != nullptr) {
     cg_message->PathSeparator('.');
     cg_message->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
     CreateTimeChannel(*cg_message,"t");
     CreateBoundDescChannel(*cg_message);
     CreateSourceInformation(*cg_message);
   }
+  return cg_message;
 }
 
-void MostConfigAdapter::CreateMostAllocTable(IDataGroup& data_group) const {
+IChannelGroup* MostConfigAdapter::CreateMostAllocTable(IDataGroup& data_group) const {
   const IChannel* cn_data_byte = nullptr;
-  if (IChannelGroup* cg_message = data_group.CreateChannelGroup(
+  IChannelGroup* cg_message = data_group.CreateChannelGroup(
           MakeGroupName("AllocTable"));
-      cg_message != nullptr) {
+  if (cg_message != nullptr) {
     cg_message->PathSeparator('.');
     cg_message->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
     CreateTimeChannel(*cg_message,"t");
@@ -176,31 +235,34 @@ void MostConfigAdapter::CreateMostAllocTable(IDataGroup& data_group) const {
       cn_data_byte->VlsdRecordId(cg_samples_frame->RecordId());
     }
   }
+  return cg_message;
 }
 
 
-void MostConfigAdapter::CreateMostSysLockState(IDataGroup& data_group) const {
-  if (IChannelGroup* cg_message = data_group.CreateChannelGroup(
+IChannelGroup* MostConfigAdapter::CreateMostSysLockState(IDataGroup& data_group) const {
+  IChannelGroup* cg_message = data_group.CreateChannelGroup(
           MakeGroupName("SysLockState"));
-      cg_message != nullptr) {
+  if (cg_message != nullptr) {
     cg_message->PathSeparator('.');
     cg_message->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
     CreateTimeChannel(*cg_message,"t");
     CreateSysLockStateChannel(*cg_message);
     CreateSourceInformation(*cg_message);
   }
+  return cg_message;
 }
 
-void MostConfigAdapter::CreateMostShutdownFlag(IDataGroup& data_group) const {
-  if (IChannelGroup* cg_message = data_group.CreateChannelGroup(
+IChannelGroup* MostConfigAdapter::CreateMostShutdownFlag(IDataGroup& data_group) const {
+  IChannelGroup* cg_message = data_group.CreateChannelGroup(
           MakeGroupName("ShutdownFlag"));
-      cg_message != nullptr) {
+  if (cg_message != nullptr) {
     cg_message->PathSeparator('.');
     cg_message->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
     CreateTimeChannel(*cg_message,"t");
     CreateShutdownFlagChannel(*cg_message);
     CreateSourceInformation(*cg_message);
   }
+  return cg_message;
 }
 
 void MostConfigAdapter::CreateEthernetPacketChannel(IChannelGroup& channel_group) const {

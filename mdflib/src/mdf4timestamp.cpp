@@ -6,9 +6,11 @@
 
 #include <chrono>
 
+using namespace std::chrono;
+
 namespace mdf::detail {
 
-void Mdf4Timestamp::GetBlockProperty(detail::BlockPropertyList &dest) const {
+void Mdf4Timestamp::GetBlockProperty(BlockPropertyList &dest) const {
   dest.emplace_back("ISO Time", GetTimeString());
   dest.emplace_back("TZ Offset [min]", std::to_string(tz_offset_));
   dest.emplace_back("DST Offset [min]", std::to_string(dst_offset_));
@@ -21,7 +23,7 @@ void Mdf4Timestamp::GetBlockProperty(detail::BlockPropertyList &dest) const {
 }
 
 uint64_t Mdf4Timestamp::Read(std::streambuf& buffer) {
-  file_position_ = detail::GetFilePosition(buffer);
+  file_position_ = GetFilePosition(buffer);
   uint64_t bytes = ReadNumber(buffer, time_);
   bytes += ReadNumber(buffer, tz_offset_);
   bytes += ReadNumber(buffer, dst_offset_);
@@ -31,9 +33,9 @@ uint64_t Mdf4Timestamp::Read(std::streambuf& buffer) {
 
 uint64_t Mdf4Timestamp::Write(std::streambuf& buffer) {
   if (file_position_ <= 0) {
-    file_position_ = detail::GetFilePosition(buffer);
+    file_position_ = GetFilePosition(buffer);
   } else {
-    detail::SetFilePosition(buffer, file_position_);
+    SetFilePosition(buffer, file_position_);
   }
   uint64_t bytes = WriteNumber(buffer, time_);
   bytes += WriteNumber(buffer, tz_offset_);
@@ -75,8 +77,7 @@ Mdf4Timestamp::Mdf4Timestamp()
     : time_(0), tz_offset_(0), dst_offset_(0), flags_(0) {}
 
 std::string Mdf4Timestamp::GetTimeString() const {
-  using namespace std::chrono;
-  nanoseconds ns(time_);
+  const nanoseconds ns(time_);
   system_clock::time_point tp(duration_cast<system_clock::duration>(ns));
   minutes tz_offset(tz_offset_);
   minutes dst_offset(dst_offset_);
@@ -87,12 +88,14 @@ std::string Mdf4Timestamp::GetTimeString() const {
 
   std::ostringstream date_time;
   date_time << std::put_time(tm_tp, "%Y-%m-%d %H:%M:%S");
-  date_time << " + " << time_ % 1000'000'000 << " ns";
+  date_time << " + " << std::to_string(time_ % 1000'000'000) << " ns";
 
-  if (flags_ & TimestampFlag::kUtcTimestamp) {
+  if ((flags_ & (TimestampFlag::kUtcTimestamp | TimestampFlag::kTimeOffsetValid))
+      == TimestampFlag::kUtcTimestamp) {
     date_time << " [UTC]";
-  } else if (flags_ & TimestampFlag::kTimeOffsetValid) {
-    date_time << "[GMT";
+  } else if ((flags_ & TimestampFlag::kTimeOffsetValid ) ==
+                       TimestampFlag::kTimeOffsetValid) {
+    date_time << " [GMT";
     if (tz_offset_ >= 0) {
       date_time << "+" << tz_offset_ / 60;
     }
@@ -102,7 +105,7 @@ std::string Mdf4Timestamp::GetTimeString() const {
     } else {
       date_time << "no DST]";
     }
-  } else if (flags_ & TimestampFlag::kLocalTimestamp) {
+  } else if ((flags_ & TimestampFlag::kLocalTimestamp) == TimestampFlag::kLocalTimestamp) {
     date_time << " [Local]";
   }
 

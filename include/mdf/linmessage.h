@@ -42,7 +42,7 @@ enum class LinTypeOfLongDominantSignal : int {
 class LinMessage {
  public:
   LinMessage() = default;
-
+  explicit LinMessage(LinMessageType msg_type);
   [[deprecated("Use the default LinMessage() constructor instead.")]]
   explicit LinMessage(const MdfWriter&);
 

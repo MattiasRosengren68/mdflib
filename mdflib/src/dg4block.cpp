@@ -64,6 +64,7 @@ IChannelGroup* Dg4Block::CreateChannelGroup() {
 }
 
 MdfBlock* Dg4Block::Find(int64_t index) const {
+
   for (auto& cg : cg_list_) {
     if (!cg) {
       continue;

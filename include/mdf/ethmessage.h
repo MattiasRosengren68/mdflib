@@ -33,6 +33,7 @@ enum class EthErrorType : int {
 class EthMessage {
  public:
   EthMessage() = default;
+  explicit EthMessage(EthMessageType msg_type);
 
   [[deprecated("Use the default EthMessage() constructor instead.")]]
   explicit EthMessage(const MdfWriter& writer);

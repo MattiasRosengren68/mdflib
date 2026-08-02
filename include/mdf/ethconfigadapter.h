@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "ethmessage.h"
 #include "mdf/iconfigadapter.h"
 
 namespace mdf {
@@ -15,6 +16,9 @@ class EthConfigAdapter : public IConfigAdapter {
   explicit EthConfigAdapter(const MdfWriter& writer);
 
   void CreateConfig(IDataGroup& dg_block) override;
+  IChannelGroup* CreateCustomConfig(IDataGroup& dg_block,
+    EthMessageType type) const;
+
  protected:
 
   /** \brief Create the composition channels for an Ethernet frame.
@@ -112,6 +116,12 @@ class EthConfigAdapter : public IConfigAdapter {
 * @param group The The ETH Receive Error channel group object.
 */
   void CreateReceiveErrorChannels(IChannelGroup& group) const;
+
+private:
+  IChannelGroup* CreateFrameGroup(IDataGroup& data_group) const;
+  IChannelGroup* CreateChecksumErrorGroup(IDataGroup& data_group) const;
+  IChannelGroup* CreateLengthErrorGroup(IDataGroup& data_group) const;
+  IChannelGroup* CreateReceiveErrorGroup(IDataGroup& data_group) const;
 };
 
 }  // namespace mdf

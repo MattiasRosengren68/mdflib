@@ -25,92 +25,48 @@ void CanConfigAdapter::CreateConfig(IDataGroup& dg_block) {
   if (StorageType() == MdfStorageType::MlsdStorage && MaxLength() < 8) {
     MaxLength(8);
   }
-  // The cn_data_byte points to the channel that defines the raw data bytes.
-  // This channel may be updated later to pint to the CG VLSD group.
-  const IChannel* cn_data_byte = nullptr;
-  if (IChannelGroup* cg_data_frame = dg_block.CreateChannelGroup(
-          MakeGroupName("DataFrame"));
-      cg_data_frame != nullptr) {
-    cg_data_frame->PathSeparator('.');
-    cg_data_frame->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
-    CreateTimeChannel(*cg_data_frame,"t");
-    CreateCanDataFrameChannel(*cg_data_frame);
-    cn_data_byte = cg_data_frame->GetChannel("CAN_DataFrame.DataBytes");
-    CreateSourceInformation(*cg_data_frame);
-    cg_data_frame->MaxLength(MaxLength());
-    cg_data_frame->StorageType(StorageType());
-  }
-
-  if (StorageType() == MdfStorageType::VlsdStorage && cn_data_byte != nullptr) {
-    // Need to add a special CG group for the data samples.
-    // Also need to set the VLSD Record ID. The CreateChannelGroup function
-    // creates a valid record ID.
-    // The VLSD CG group doesn't have any channels.
-
-    if (IChannelGroup* cg_samples_frame = dg_block.CreateChannelGroup("");
-        cg_samples_frame != nullptr) {
-      cg_samples_frame->Flags(CgFlag::VlsdChannel);
-      cg_samples_frame->MaxLength(MaxLength());
-      cg_samples_frame->StorageType(StorageType());
-      cn_data_byte->VlsdRecordId(cg_samples_frame->RecordId());
-    }
-  }
-
-  if (IChannelGroup* cg_remote_frame = dg_block.CreateChannelGroup(
-          MakeGroupName("RemoteFrame"));
-      cg_remote_frame != nullptr) {
-    // The remote frame doesn't store any data bytes.
-    cg_remote_frame->PathSeparator('.');
-    cg_remote_frame->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
-    CreateTimeChannel(*cg_remote_frame,"t");
-    CreateCanRemoteFrameChannel(*cg_remote_frame);
-    CreateSourceInformation(*cg_remote_frame);
-    cg_remote_frame->MaxLength(MaxLength());
-    cg_remote_frame->StorageType(StorageType());
-  }
-
-  // Similar to the data frame, the error frame may store data bytes.
-  const IChannel* cn_error_byte = nullptr;
-  if (IChannelGroup* cg_error_frame = dg_block.CreateChannelGroup(
-          MakeGroupName("ErrorFrame"));
-      cg_error_frame != nullptr) {
-    cg_error_frame->PathSeparator('.');
-    cg_error_frame->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
-    CreateTimeChannel(*cg_error_frame,"t");
-    CreateCanErrorFrameChannel(*cg_error_frame);
-    cn_error_byte = cg_error_frame->GetChannel("CAN_ErrorFrame.DataBytes");
-    CreateSourceInformation(*cg_error_frame);
-    cg_error_frame->MaxLength(MaxLength());
-    cg_error_frame->StorageType(StorageType());
-  }
-
-  if (StorageType() == MdfStorageType::VlsdStorage && cn_error_byte != nullptr) {
-    // Need to add a special CG group for the error samples
-    if (auto* cg_errors_frame = dg_block.CreateChannelGroup("");
-        cg_errors_frame != nullptr) {
-      cg_errors_frame->Flags(CgFlag::VlsdChannel);
-      cg_errors_frame->MaxLength(MaxLength());
-      cg_errors_frame->StorageType(StorageType());
-      cn_error_byte->VlsdRecordId(cg_errors_frame->RecordId());
-    }
-  }
+  CreateDataFrameGroup(dg_block);
+  CreateRemoteFrameGroup(dg_block);
+  CreateErrorFrameGroup(dg_block);
 
   if (mandatory_only) {
     // Do not include the overload frame as it rarely is used.
     return;
   }
+  CreateOverloadFrameGroup(dg_block);
+}
 
-  if (IChannelGroup* cg_overload_frame = dg_block.CreateChannelGroup(
-          MakeGroupName("OverloadFrame"));
-      cg_overload_frame != nullptr) {
-    cg_overload_frame->PathSeparator('.');
-    cg_overload_frame->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
-    CreateTimeChannel(*cg_overload_frame,"t");
-    CreateCanOverloadFrameChannel(*cg_overload_frame);
-    CreateSourceInformation(*cg_overload_frame);
-    cg_overload_frame->MaxLength(MaxLength());
-    cg_overload_frame->StorageType(StorageType());
+IChannelGroup* CanConfigAdapter::CreateCustomConfig(IDataGroup& dg_block,
+                                          MessageType message_type) {
+  const bool mandatory_only = MandatoryMembersOnly();
+  dg_block.MandatoryMembersOnly(mandatory_only);
+
+  if (StorageType() == MdfStorageType::MlsdStorage && MaxLength() < 8) {
+    MaxLength(8);
   }
+  IChannelGroup* channel_group = nullptr;
+  switch (message_type) {
+
+    case MessageType::CAN_DataFrame:
+      channel_group = CreateDataFrameGroup(dg_block);
+      break;
+
+    case MessageType::CAN_RemoteFrame:
+      channel_group = CreateRemoteFrameGroup(dg_block);
+      break;
+
+    case MessageType::CAN_ErrorFrame:
+      channel_group= CreateErrorFrameGroup(dg_block);
+      break;
+
+    case MessageType::CAN_OverloadFrame:
+      channel_group= CreateOverloadFrameGroup(dg_block);
+      break;
+
+    default:
+      break;
+  }
+  return channel_group;
 }
 
 void CanConfigAdapter::CreateCanDataFrameChannel(IChannelGroup& group) const {
@@ -261,7 +217,7 @@ void CanConfigAdapter::CreateCanErrorFrameChannel(IChannelGroup& group) const {
   CreateDataBytesChannel(*cn_error_frame, 26 );
 }
 
-void CanConfigAdapter::CreateCanOverloadFrameChannel(IChannelGroup& group) {
+void CanConfigAdapter::CreateCanOverloadFrameChannel(IChannelGroup& group) const {
   auto* cn_overload_frame = group.CreateChannel("CAN_OverloadFrame");
   if (cn_overload_frame == nullptr) {
     MDF_ERROR() << "Failed to create the CAN_OverloadFrame channel.";
@@ -278,6 +234,102 @@ void CanConfigAdapter::CreateCanOverloadFrameChannel(IChannelGroup& group) {
   }
   CreateBusChannel(*cn_overload_frame);
   CreateDirChannel(*cn_overload_frame, 9, 0);
+}
+
+IChannelGroup* CanConfigAdapter::CreateDataFrameGroup(IDataGroup& data_group) const {
+
+  // The cn_data_byte points to the channel that defines the raw data bytes.
+  // This channel may be updated later to pint to the CG VLSD group.
+  const IChannel* cn_data_byte = nullptr;
+  IChannelGroup* cg_data_frame =  data_group.CreateChannelGroup(
+          MakeGroupName("DataFrame"));
+  if (cg_data_frame != nullptr) {
+    cg_data_frame->PathSeparator('.');
+    cg_data_frame->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
+    CreateTimeChannel(*cg_data_frame,"t");
+    CreateCanDataFrameChannel(*cg_data_frame);
+    cn_data_byte = cg_data_frame->GetChannel("CAN_DataFrame.DataBytes");
+    CreateSourceInformation(*cg_data_frame);
+    cg_data_frame->MaxLength(MaxLength());
+    cg_data_frame->StorageType(StorageType());
+  }
+
+  if (StorageType() == MdfStorageType::VlsdStorage && cn_data_byte != nullptr) {
+    // Need to add a special CG group for the data samples.
+    // Also need to set the VLSD Record ID. The CreateChannelGroup function
+    // creates a valid record ID.
+    // The VLSD CG group doesn't have any channels.
+
+    if (IChannelGroup* cg_samples_frame = data_group.CreateChannelGroup("");
+        cg_samples_frame != nullptr) {
+      cg_samples_frame->Flags(CgFlag::VlsdChannel);
+      cg_samples_frame->MaxLength(MaxLength());
+      cg_samples_frame->StorageType(StorageType());
+      cn_data_byte->VlsdRecordId(cg_samples_frame->RecordId());
+    }
+  }
+  return cg_data_frame;
+}
+
+IChannelGroup* CanConfigAdapter::CreateRemoteFrameGroup(IDataGroup& data_group) const {
+  IChannelGroup* cg_remote_frame = data_group.CreateChannelGroup(
+        MakeGroupName("RemoteFrame"));
+  if (cg_remote_frame != nullptr) {
+    // The remote frame doesn't store any data bytes.
+    cg_remote_frame->PathSeparator('.');
+    cg_remote_frame->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
+    CreateTimeChannel(*cg_remote_frame,"t");
+    CreateCanRemoteFrameChannel(*cg_remote_frame);
+    CreateSourceInformation(*cg_remote_frame);
+    cg_remote_frame->MaxLength(MaxLength());
+    cg_remote_frame->StorageType(StorageType());
+  }
+  return cg_remote_frame;
+}
+
+IChannelGroup* CanConfigAdapter::CreateErrorFrameGroup(IDataGroup& data_group) const {
+
+  // Similar to the data frame, the error frame may store data bytes.
+  const IChannel* cn_error_byte = nullptr;
+  IChannelGroup* cg_error_frame = data_group.CreateChannelGroup(
+          MakeGroupName("ErrorFrame"));
+  if (cg_error_frame != nullptr) {
+    cg_error_frame->PathSeparator('.');
+    cg_error_frame->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
+    CreateTimeChannel(*cg_error_frame,"t");
+    CreateCanErrorFrameChannel(*cg_error_frame);
+    cn_error_byte = cg_error_frame->GetChannel("CAN_ErrorFrame.DataBytes");
+    CreateSourceInformation(*cg_error_frame);
+    cg_error_frame->MaxLength(MaxLength());
+    cg_error_frame->StorageType(StorageType());
+  }
+
+  if (StorageType() == MdfStorageType::VlsdStorage && cn_error_byte != nullptr) {
+    // Need to add a special CG group for the error samples
+    if (IChannelGroup* cg_errors_frame = data_group.CreateChannelGroup("");
+        cg_errors_frame != nullptr) {
+      cg_errors_frame->Flags(CgFlag::VlsdChannel);
+      cg_errors_frame->MaxLength(MaxLength());
+      cg_errors_frame->StorageType(StorageType());
+      cn_error_byte->VlsdRecordId(cg_errors_frame->RecordId());
+    }
+  }
+  return cg_error_frame;
+}
+
+IChannelGroup* CanConfigAdapter::CreateOverloadFrameGroup(IDataGroup& data_group) const {
+  IChannelGroup* cg_overload_frame = data_group.CreateChannelGroup(
+        MakeGroupName("OverloadFrame"));
+  if (cg_overload_frame != nullptr) {
+    cg_overload_frame->PathSeparator('.');
+    cg_overload_frame->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
+    CreateTimeChannel(*cg_overload_frame,"t");
+    CreateCanOverloadFrameChannel(*cg_overload_frame);
+    CreateSourceInformation(*cg_overload_frame);
+    cg_overload_frame->MaxLength(MaxLength());
+    cg_overload_frame->StorageType(StorageType());
+  }
+  return cg_overload_frame;
 }
 
 IChannel* CanConfigAdapter::CreateDataBytesChannel(IChannel& parent_channel,

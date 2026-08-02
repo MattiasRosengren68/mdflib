@@ -70,7 +70,8 @@ bool MdfViewer::OnInit() {
   //boost::locale::generator gen;
 
   std::locale::global(std::locale(""));
-  std::wcout.imbue(std::locale());
+  std::cout.imbue(std::locale::classic());
+  std::wcout.imbue(std::locale::classic());
 
     // Setup system basic configuration
   SetVendorDisplayName("MdfLib");

@@ -28,8 +28,6 @@ using namespace std::filesystem;
 using namespace util::log;
 
 namespace {
-#include "img/sub.xpm"
-#include "img/tree_list.xpm"
 // Bitmap index for the tree control (tree_list.bmp)
 constexpr int TREE_ROOT = 0;
 constexpr int TREE_ID = 1;
@@ -1092,7 +1090,7 @@ void ChildFrame::OnListItemActivated(wxListEvent& event) {
     return;
   }
 
-  auto tree_item = FindId(left_,left_->GetRootItem(), block_id);
+  const auto tree_item = FindId(left_,left_->GetRootItem(), block_id);
   int64_t parent_id = -1;
   int64_t grand_parent_id = -1;
   if (tree_item.IsOk()) {
@@ -1107,7 +1105,7 @@ void ChildFrame::OnListItemActivated(wxListEvent& event) {
     doc->SetSelectedBlockId(block_id, parent_id, grand_parent_id);
     left_->SelectItem(tree_item);
     left_->EnsureVisible(tree_item);
-    doc->SetSelectedBlockId(block_id, parent_id, grand_parent_id);
+  //  doc->SetSelectedBlockId(block_id, parent_id, grand_parent_id);
   } else {
     doc->SetSelectedBlockId(block_id, parent_id, grand_parent_id);
   }

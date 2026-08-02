@@ -8,8 +8,6 @@
 #include <filesystem>
 #include <ranges>
 
-#include <boost/iostreams/device/array.hpp>
-
 #include "util/logconfig.h"
 #include "util/logstream.h"
 #include "util/timestamp.h"
@@ -20,6 +18,8 @@
 #include "mdf/mdfwriter.h"
 #include "mdf/ichannelgroup.h"
 #include "mdf/idatagroup.h"
+
+#include "mdf/ethconfigadapter.h"
 
 using namespace util::log;
 using namespace std::filesystem;
@@ -380,4 +380,133 @@ TEST_F(TestEthLogger, Mdf4EthMandatory) {
 TEST_F(TestEthLogger, ErrorDetected) {
   EXPECT_FALSE(kErrorDetected);
 }
+
+
+TEST_F(TestEthLogger, TestCustomConfig) {
+  if (kSkipTest) {
+    GTEST_SKIP();
+  }
+
+  constexpr size_t max_sample = 10;
+  const std::vector<uint8_t> sample_data({0xAA, 0xBB});
+  path mdf_file(kTestDir);
+  mdf_file.append("eth_custom_sorted.mf4");
+  {
+    auto writer = MdfFactory::CreateMdfWriter(MdfWriterType::MdfBusLogger);
+    ASSERT_TRUE(writer);
+    writer->Init(mdf_file.string());
+
+    auto* header = writer->Header();
+    ASSERT_TRUE(header != nullptr);
+    HdComment hd_comment("Test of ETH Custom Config");
+    hd_comment.Author("Ingemar Hedvall");
+    hd_comment.Department("IH Development");
+    hd_comment.Project("ETH bus support");
+    hd_comment.Subject("Testing ETH support");
+    hd_comment.TimeSource(MdString("PC UTC Time"));
+    header->SetHdComment(hd_comment);
+
+    auto* history = header->CreateFileHistory();
+    ASSERT_TRUE(history != nullptr);
+    FhComment fh_comment("Initial file change");
+    fh_comment.ToolId("Google Unit Test");
+    fh_comment.ToolVendor("ACME Road Runner Company");
+    fh_comment.ToolVersion("1.0");
+    fh_comment.UserName("ihedvall");
+    history->SetFhComment(fh_comment);
+
+    writer->BusType(MdfBusType::Ethernet);
+    writer->StorageType(MdfStorageType::FixedLengthStorage);
+    writer->PreTrigTime(0.0);
+    writer->CompressData(false);
+    writer->MandatoryMembersOnly(false);
+
+    EthConfigAdapter eth_config(*writer);
+     // Create a DG block
+    IDataGroup* dg_data_frame = header->CreateDataGroup();
+    ASSERT_TRUE(dg_data_frame != nullptr);
+     IChannelGroup* eth_frame = eth_config.CreateCustomConfig(
+      *dg_data_frame, EthMessageType::ETH_Frame);
+    ASSERT_TRUE(eth_frame != nullptr);
+
+    IDataGroup* dg_error_frame = header->CreateDataGroup();
+    ASSERT_TRUE(dg_error_frame != nullptr);
+    IChannelGroup* error_frame = eth_config.CreateCustomConfig(
+      *dg_error_frame, EthMessageType::ETH_ReceiveError);
+    ASSERT_TRUE(error_frame != nullptr);
+
+    writer->InitMeasurement();
+    uint64_t tick_time = TimeStampToNs();
+    writer->StartMeasurement(tick_time);
+
+    for (size_t sample = 0; sample < max_sample; ++sample) {
+
+      EthMessage d_frame(EthMessageType::ETH_Frame);
+      d_frame.DataBytes(sample_data);
+
+      EthMessage e_frame(EthMessageType::ETH_ReceiveError);
+      e_frame.DataBytes(sample_data);
+
+      writer->SaveEthMessage(*dg_data_frame, *eth_frame, tick_time, d_frame);
+      tick_time += 1'000'000;
+      writer->SaveEthMessage(*dg_error_frame, *error_frame, tick_time, e_frame);
+      tick_time += 1'000'000;
+    }
+
+    writer->StopMeasurement(tick_time);
+    writer->FinalizeMeasurement();
+  }
+
+  {
+    MdfReader reader(mdf_file.string());
+    ChannelObserverList observer_list;
+
+    ASSERT_TRUE(reader.IsOk());
+    ASSERT_TRUE(reader.ReadEverythingButData());
+    const MdfFile* file = reader.GetFile();
+    ASSERT_TRUE(file != nullptr);
+
+    const IHeader* header = file->Header();
+    ASSERT_TRUE(header != nullptr);
+
+    const auto dg_list = header->DataGroups();
+    EXPECT_EQ(dg_list.size(), 2);
+
+    for (IDataGroup* data_group : dg_list) {
+      ASSERT_TRUE(data_group != nullptr);
+
+      const auto cg_list = data_group->ChannelGroups();
+      EXPECT_EQ(cg_list.size(), 1);
+      for (IChannelGroup* channel_group : cg_list) {
+        ASSERT_TRUE(channel_group != nullptr);
+        CreateChannelObserverForChannelGroup(*data_group, *channel_group,
+                                             observer_list);
+      }
+      reader.ReadData(*data_group);
+      bool data_ok = false;
+      for (auto& observer : observer_list) {
+        ASSERT_TRUE(observer);
+        const uint64_t nof_samples = observer->NofSamples();
+
+        EXPECT_EQ(nof_samples, max_sample);
+        const auto& channel = observer->Channel();
+        if (channel.DataType() == ChannelDataType::ByteArray &&
+            (channel.Type() == ChannelType::VariableLength ||
+             channel.Type() == ChannelType::MaxLength) ) {
+          for (uint64_t sample = 0; sample < max_sample; ++sample) {
+            std::vector<uint8_t> value_list;
+            const bool valid = observer->GetEngValue(sample, value_list);
+            EXPECT_TRUE(valid) << "Sample: " << sample;
+            EXPECT_EQ(value_list, sample_data);
+            data_ok = true;
+          }
+        }
+      }
+      EXPECT_TRUE(data_ok);
+    }
+    reader.Close();
+  }
+
+}
+
 } // mdf::test

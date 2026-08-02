@@ -24,85 +24,60 @@ void LinConfigAdapter::CreateConfig(IDataGroup& dg_block) {
     StorageType(MdfStorageType::MlsdStorage);
     MaxLength(8);
   }
+  CreateFrameGroup(dg_block);
+  CreateChecksumErrorGroup(dg_block);
+  CreateReceiveErrorGroup(dg_block);
+  CreateSyncErrorGroup(dg_block);
+  CreateTransmissionErrorGroup(dg_block);
+  CreateWakeUpGroup(dg_block);
+  CreateSpikeGroup(dg_block);
+  CreateLongDomGroup(dg_block);
+}
 
-  if (IChannelGroup* cg_frame = dg_block.CreateChannelGroup(
-          MakeGroupName("Frame"));
-    cg_frame != nullptr) {
-    cg_frame->PathSeparator('.');
-    cg_frame->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
-    CreateSourceInformation(*cg_frame);
-    CreateTimeChannel(*cg_frame, "t");
-    CreateFrameChannels(*cg_frame);
+IChannelGroup* LinConfigAdapter::CreateCustomConfig(IDataGroup& dg_block, LinMessageType type) {
+  dg_block.MandatoryMembersOnly(MandatoryMembersOnly());
+  if (StorageType() != MdfStorageType::MlsdStorage) {
+    StorageType(MdfStorageType::MlsdStorage);
+    MaxLength(8);
   }
+  IChannelGroup* channel_group = nullptr;
+  switch (type) {
+    case LinMessageType::LIN_Frame:
+      channel_group = CreateFrameGroup(dg_block);
+      break;
 
-  if (IChannelGroup* cg_checksum_error = dg_block.CreateChannelGroup(
-          MakeGroupName("ChecksumError"));
-      cg_checksum_error != nullptr ) {
-    cg_checksum_error->PathSeparator('.');
-    cg_checksum_error->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
-    CreateSourceInformation(*cg_checksum_error);
-    CreateTimeChannel(*cg_checksum_error, "t");
-    CreateChecksumErrorChannels(*cg_checksum_error);
-  }
+    case LinMessageType::LIN_ChecksumError:
+      channel_group = CreateChecksumErrorGroup(dg_block);
+      break;
 
-  if (IChannelGroup* cg_receive_error = dg_block.CreateChannelGroup(
-          MakeGroupName("ReceiveError"));
-      cg_receive_error != nullptr ) {
-    cg_receive_error->PathSeparator('.');
-    cg_receive_error->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
-    CreateSourceInformation(*cg_receive_error);
-    CreateTimeChannel(*cg_receive_error, "t");
-    CreateReceiveErrorChannels(*cg_receive_error);
-  }
+    case LinMessageType::LIN_ReceiveError:
+      channel_group = CreateReceiveErrorGroup(dg_block);
+      break;
 
-  if (IChannelGroup* cg_sync_error = dg_block.CreateChannelGroup(
-          MakeGroupName("SyncError"));
-      cg_sync_error != nullptr ) {
-    cg_sync_error->PathSeparator('.');
-    cg_sync_error->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
-    CreateSourceInformation(*cg_sync_error);
-    CreateTimeChannel(*cg_sync_error, "t");
-    CreateSyncChannels(*cg_sync_error);
-  }
-  if (IChannelGroup* cg_transmit_error = dg_block.CreateChannelGroup(
-          MakeGroupName("TransmissionError"));
-      cg_transmit_error != nullptr ) {
-    cg_transmit_error->PathSeparator('.');
-    cg_transmit_error->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
-    CreateSourceInformation(*cg_transmit_error);
-    CreateTimeChannel(*cg_transmit_error, "t");
-    CreateTransmissionErrorChannels(*cg_transmit_error);
-  }
+    case LinMessageType::LIN_SyncError:
+      channel_group = CreateSyncErrorGroup(dg_block);
+      break;
 
-   if (IChannelGroup* cg_wakeUp = dg_block.CreateChannelGroup(
-          MakeGroupName("WakeUp"));
-      cg_wakeUp != nullptr ) {
-    cg_wakeUp->PathSeparator('.');
-    cg_wakeUp->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
-    CreateSourceInformation(*cg_wakeUp);
-    CreateTimeChannel(*cg_wakeUp, "t");
-    CreateWakeUpChannels(*cg_wakeUp);
-  }
+    case LinMessageType::LIN_TransmissionError:
+      channel_group = CreateTransmissionErrorGroup(dg_block);
+      break;
 
-  if (IChannelGroup* cg_spike = dg_block.CreateChannelGroup(
-          MakeGroupName("Spike"));
-      cg_spike != nullptr ) {
-    cg_spike->PathSeparator('.');
-    cg_spike->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
-    CreateSourceInformation(*cg_spike);
-    CreateTimeChannel(*cg_spike, "t");
-    CreateSpikeChannels(*cg_spike);
-  }
+    case LinMessageType::LIN_WakeUp:
+      channel_group = CreateWakeUpGroup(dg_block);
+      break;
 
-  if (IChannelGroup* cg_long_dom = dg_block.CreateChannelGroup(
-          MakeGroupName("LongDom"));
-      cg_long_dom != nullptr ) {
-    cg_long_dom->PathSeparator('.');
-    cg_long_dom->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
-    CreateSourceInformation(*cg_long_dom);
-    CreateTimeChannel(*cg_long_dom, "t");
-    CreateLongDominantChannels(*cg_long_dom);
+    case LinMessageType::LIN_Spike:
+      channel_group = CreateSpikeGroup(dg_block);
+      break;
+
+    case LinMessageType::LIN_LongDominantSignal:
+      channel_group = CreateLongDomGroup(dg_block);
+      break;
+
+    default:
+      break;
   }
+  return channel_group;
 }
 
 void LinConfigAdapter::CreateFrameChannels(IChannelGroup& group) const {
@@ -533,5 +508,115 @@ void LinConfigAdapter::CreateLongDominantChannels(mdf::IChannelGroup& group) con
 
 }
 
+IChannelGroup* LinConfigAdapter::CreateFrameGroup(IDataGroup& data_group) const {
+  IChannelGroup* cg_frame = data_group.CreateChannelGroup(
+        MakeGroupName("Frame"));
+  if (cg_frame != nullptr) {
+    cg_frame->PathSeparator('.');
+    cg_frame->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
+    CreateSourceInformation(*cg_frame);
+    CreateTimeChannel(*cg_frame, "t");
+    CreateFrameChannels(*cg_frame);
+  }
+  return cg_frame;
+}
+
+IChannelGroup* LinConfigAdapter::CreateChecksumErrorGroup(
+    IDataGroup& data_group) const {
+  IChannelGroup* cg_checksum_error = data_group.CreateChannelGroup(
+        MakeGroupName("ChecksumError"));
+  if (cg_checksum_error != nullptr ) {
+    cg_checksum_error->PathSeparator('.');
+    cg_checksum_error->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
+    CreateSourceInformation(*cg_checksum_error);
+    CreateTimeChannel(*cg_checksum_error, "t");
+    CreateChecksumErrorChannels(*cg_checksum_error);
+  }
+  return cg_checksum_error;
+}
+
+IChannelGroup* LinConfigAdapter::CreateReceiveErrorGroup(
+    IDataGroup& data_group) const {
+  IChannelGroup* cg_receive_error = data_group.CreateChannelGroup(
+        MakeGroupName("ReceiveError"));
+  if (cg_receive_error != nullptr ) {
+    cg_receive_error->PathSeparator('.');
+    cg_receive_error->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
+    CreateSourceInformation(*cg_receive_error);
+    CreateTimeChannel(*cg_receive_error, "t");
+    CreateReceiveErrorChannels(*cg_receive_error);
+  }
+  return cg_receive_error;
+}
+
+IChannelGroup* LinConfigAdapter::CreateSyncErrorGroup(
+    IDataGroup& data_group) const {
+  IChannelGroup* cg_sync_error = data_group.CreateChannelGroup(
+        MakeGroupName("SyncError"));
+  if (cg_sync_error != nullptr) {
+    cg_sync_error->PathSeparator('.');
+    cg_sync_error->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
+    CreateSourceInformation(*cg_sync_error);
+    CreateTimeChannel(*cg_sync_error, "t");
+    CreateSyncChannels(*cg_sync_error);
+  }
+  return cg_sync_error;
+}
+
+IChannelGroup* LinConfigAdapter::CreateTransmissionErrorGroup(
+                      IDataGroup& data_group) const {
+   IChannelGroup* cg_transmit_error = data_group.CreateChannelGroup(
+        MakeGroupName("TransmissionError"));
+   if (cg_transmit_error != nullptr ) {
+    cg_transmit_error->PathSeparator('.');
+    cg_transmit_error->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
+    CreateSourceInformation(*cg_transmit_error);
+    CreateTimeChannel(*cg_transmit_error, "t");
+    CreateTransmissionErrorChannels(*cg_transmit_error);
+  }
+  return cg_transmit_error;
+}
+
+IChannelGroup* LinConfigAdapter::CreateWakeUpGroup(
+                          IDataGroup& data_group) const {
+  IChannelGroup* cg_wakeUp = data_group.CreateChannelGroup(
+       MakeGroupName("WakeUp"));
+  if (cg_wakeUp != nullptr ) {
+    cg_wakeUp->PathSeparator('.');
+    cg_wakeUp->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
+    CreateSourceInformation(*cg_wakeUp);
+    CreateTimeChannel(*cg_wakeUp, "t");
+    CreateWakeUpChannels(*cg_wakeUp);
+  }
+  return cg_wakeUp;
+}
+
+IChannelGroup* LinConfigAdapter::CreateSpikeGroup(
+    IDataGroup& data_group) const {
+  IChannelGroup* cg_spike = data_group.CreateChannelGroup(
+        MakeGroupName("Spike"));
+  if (cg_spike != nullptr) {
+    cg_spike->PathSeparator('.');
+    cg_spike->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
+    CreateSourceInformation(*cg_spike);
+    CreateTimeChannel(*cg_spike, "t");
+    CreateSpikeChannels(*cg_spike);
+  }
+  return cg_spike;
+}
+
+IChannelGroup* LinConfigAdapter::CreateLongDomGroup(
+    IDataGroup& data_group) const {
+  IChannelGroup* cg_long_dom = data_group.CreateChannelGroup(
+        MakeGroupName("LongDom"));
+  if (cg_long_dom != nullptr) {
+    cg_long_dom->PathSeparator('.');
+    cg_long_dom->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
+    CreateSourceInformation(*cg_long_dom);
+    CreateTimeChannel(*cg_long_dom, "t");
+    CreateLongDominantChannels(*cg_long_dom);
+  }
+  return cg_long_dom;
+}
 
 }  // namespace mdf

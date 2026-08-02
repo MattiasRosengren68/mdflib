@@ -6,6 +6,7 @@
 #pragma once
 
 #include "mdf/iconfigadapter.h"
+#include "mdf/linmessage.h"
 
 namespace mdf {
 
@@ -15,6 +16,7 @@ class LinConfigAdapter: public IConfigAdapter {
   explicit LinConfigAdapter(const MdfWriter& writer);
 
   void CreateConfig(IDataGroup& dg_block) override;
+  IChannelGroup* CreateCustomConfig(IDataGroup& dg_block, LinMessageType type);
  protected:
 
   /** \brief Creates the channels for a LIN data frame.
@@ -185,6 +187,15 @@ class LinConfigAdapter: public IConfigAdapter {
  * @param group The The LIN Spike channel group object.
  */
   void CreateLongDominantChannels(IChannelGroup& group) const;
+private:
+  IChannelGroup* CreateFrameGroup(IDataGroup& data_group) const;
+  IChannelGroup* CreateChecksumErrorGroup(IDataGroup& data_group) const;
+  IChannelGroup* CreateReceiveErrorGroup(IDataGroup& data_group) const;
+  IChannelGroup* CreateSyncErrorGroup(IDataGroup& data_group) const;
+  IChannelGroup* CreateTransmissionErrorGroup(IDataGroup& data_group) const;
+  IChannelGroup* CreateWakeUpGroup(IDataGroup& data_group) const;
+  IChannelGroup* CreateSpikeGroup(IDataGroup& data_group) const;
+  IChannelGroup* CreateLongDomGroup(IDataGroup& data_group) const;
 };
 
 }  // namespace mdf

@@ -27,9 +27,9 @@ int64_t BlockProperty::Link() const {
   }
   int64_t file_pos = 0;
   try {
-    std::stringstream temp;
-    temp << std::hex << value_.substr(2);
-    temp >> file_pos;
+    std::istringstream temp(value_.substr(2));
+    temp.imbue(std::locale::classic());
+    temp >> std::hex >> file_pos;
   } catch (const std::exception &) {
     return 0;
   }

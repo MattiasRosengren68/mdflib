@@ -7,7 +7,6 @@
 
 #include "mdf/linmessage.h"
 #include "mdf/mdfwriter.h"
-#include "mdf/mdfhelper.h"
 #include "mdf/idatagroup.h"
 
 #include "littlebuffer.h"
@@ -37,6 +36,11 @@ namespace {
 }
 
 namespace mdf {
+
+LinMessage::LinMessage(LinMessageType msg_type)
+  : LinMessage::LinMessage() {
+  MessageType(msg_type);
+}
 
 LinMessage::LinMessage(const MdfWriter&r)
 : LinMessage() {
