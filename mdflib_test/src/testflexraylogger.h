@@ -9,7 +9,7 @@
 
 namespace mdf::test {
 
-class TestFlexRayLogger : public testing::Test {
+class TestFlexRayLogger : public testing::TestWithParam<bool> {
  public:
   static void SetUpTestSuite();
   static void TearDownTestSuite();

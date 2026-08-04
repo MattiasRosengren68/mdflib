@@ -6,6 +6,10 @@
 #include "littlebuffer.h"
 
 namespace mdf::detail {
+
+int64_t Sd4Block::Index() const { return FilePosition(); }
+std::string Sd4Block::BlockType() const { return MdfBlock::BlockType(); }
+
 uint64_t Sd4Block::Read(std::streambuf& buffer) {
   uint64_t bytes = ReadHeader4(buffer);
   data_position_ = GetFilePosition(buffer);

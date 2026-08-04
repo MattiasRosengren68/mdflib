@@ -3,13 +3,19 @@
  * SPDX-License-Identifier: MIT
  */
 #pragma once
+#include <cstdint>
+
+#include "mdf/iblock.h"
 #include "datablock.h"
 
 namespace mdf::detail {
 enum class Dz4ZipType : uint8_t { Deflate = 0, TransposeAndDeflate = 1 };
 
-class Dz4Block : public DataBlock {
+class Dz4Block : public DataBlock, public IBlock {
  public:
+  [[nodiscard]] int64_t Index() const override;
+  [[nodiscard]] std::string BlockType() const override;
+
   void OrigBlockType(const std::string& block_type) {
     orig_block_type_ = block_type;
   }

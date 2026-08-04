@@ -2,21 +2,25 @@
  * Copyright 2021 Ingemar Hedvall
  * SPDX-License-Identifier: MIT
  */
-#include <string>
-#include <filesystem>
+#include "mainframe.h"
 
-#include <wx/config.h>
 #include <wx/aboutdlg.h>
+#include <wx/config.h>
+#include <wx/datetime.h>
+
+#include <filesystem>
+#include <string>
 
 #include "mdf/mdfreader.h"
+#include "mdf/mdflogstream.h"
 
-#include "mainframe.h"
+#include "mdfviewer.h"
 #include "windowid.h"
-
 
 namespace {
 #include "img/app.xpm"
 }
+
 
 namespace mdf::viewer {
 
@@ -29,6 +33,7 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxDocMDIParentFrame)
   EVT_MENU(wxID_ABOUT, MainFrame::OnAbout)
   EVT_CLOSE(MainFrame::OnClose)
   EVT_DROP_FILES(MainFrame::OnDropFiles)
+  EVT_TIMER(kIdMainFrameTimer, MainFrame::OnTimer)
 wxEND_EVENT_TABLE()
 
 MainFrame::MainFrame(const wxString& title, const wxPoint& start_pos, const wxSize& start_size, bool maximized)
@@ -80,8 +85,29 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& start_pos, const wxSi
   menu_bar->Append(menu_block, "Data");
   menu_bar->Append(menu_about, wxGetStockLabel(wxID_HELP));
   wxFrameBase::SetMenuBar(menu_bar);
+
+  auto* status_bar = new wxStatusBar(this);
+  constexpr int status_bar_widths[2] = {-1, 100};
+  status_bar->SetFieldsCount(2, status_bar_widths);
+  constexpr int status_bar_styles[2] = {wxSB_NORMAL, wxSB_SUNKEN};
+  status_bar->SetStatusStyles(2, status_bar_styles);
+  wxDocMDIParentFrame::SetStatusBar(status_bar);
+
+  timer_ = new wxTimer(this, kIdMainFrameTimer);
+  const bool start_timer = timer_->Start(1000);
+  if (!start_timer) {
+    MDF_ERROR() << "Failed to start main frame timer.";
+  }
 }
 
+MainFrame::~MainFrame() {
+  if (timer_ != nullptr && timer_->IsRunning()) {
+    timer_->Stop();
+  }
+  if (timer_ != nullptr) {
+    delete timer_;
+  }
+}
 
 void MainFrame::OnClose(wxCloseEvent &event) {
 
@@ -104,6 +130,9 @@ void MainFrame::OnClose(wxCloseEvent &event) {
     }
   }
   event.Skip(true);
+  if (timer_ != nullptr && timer_->IsRunning()) {
+    timer_->Stop();
+  }
 }
 
 void MainFrame::OnAbout(wxCommandEvent&) {
@@ -168,7 +197,7 @@ void MainFrame::OnDropFiles(wxDropFilesEvent& event) {
     try {
       const auto& file = list[ii];
       std::filesystem::path p(file.ToStdWstring());
-      if (!std::filesystem::exists(p)) {
+      if (!exists(p)) {
         continue;
       }
       const auto& u8str = p.u8string();
@@ -190,5 +219,24 @@ void MainFrame::OnDropFiles(wxDropFilesEvent& event) {
     }
   }
 }
+void MainFrame::OnTimer(wxTimerEvent& event) {
+  if (event.GetId() != kIdMainFrameTimer) {
+    return;
+  }
+  const auto now = wxDateTime::Now();
+  wxString new_time = now.FormatDate();
+  new_time += " ";
+  new_time += now.FormatTime();
+  size_t count = new_time.size();
+  // Removing seconds
+  new_time.Truncate(count - 3);
 
+  if (wxStatusBar* status_bar = GetStatusBar(); status_bar != nullptr) {
+    const wxString old_time = status_bar->GetStatusText(1);
+    if (new_time != old_time) {
+      status_bar->SetStatusText(new_time, 1);
+    }
+  }
 }
+
+}  // namespace mdf::viewer

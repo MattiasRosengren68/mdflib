@@ -69,101 +69,39 @@ EthConfigAdapter::EthConfigAdapter(const MdfWriter& writer)
 
 void EthConfigAdapter::CreateConfig(IDataGroup& dg_block) {
   dg_block.MandatoryMembersOnly(MandatoryMembersOnly());
-  const IChannel* cn_data_byte = nullptr; // Need to update the VLSD Record ID
-  if (IChannelGroup* cg_frame = dg_block.CreateChannelGroup("ETH_Frame");
-      cg_frame != nullptr) {
-    cg_frame->PathSeparator('.');
-    cg_frame->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
-    CreateSourceInformation(*cg_frame);
-    CreateTimeChannel(*cg_frame, "t");
-    CreateFrameChannels(*cg_frame);
-    cn_data_byte = cg_frame->GetChannel("ETH_Frame.DataBytes");
-  }
 
-  // Add a CG-VLSD block that stores the signal data.
-  // The FixedLengthStorage is used for SD storage
-  if ( StorageType() != MdfStorageType::FixedLengthStorage &&
-      cn_data_byte != nullptr) {
-    // Need to add a special CG group for the data samples
-    if (IChannelGroup* cg_samples = dg_block.CreateChannelGroup("");
-     cg_samples != nullptr) {
-      cg_samples->Flags(CgFlag::VlsdChannel);
-      cn_data_byte->VlsdRecordId(cg_samples->RecordId());
-    }
-  }
+  CreateFrameGroup(dg_block);
+  CreateChecksumErrorGroup(dg_block);
+  CreateLengthErrorGroup(dg_block);
+  CreateReceiveErrorGroup(dg_block);
+}
 
-  cn_data_byte = nullptr;
-  if (IChannelGroup* cg_checksum_error = dg_block.CreateChannelGroup("ETH_ChecksumError");
-      cg_checksum_error != nullptr) {
-    cg_checksum_error->PathSeparator('.');
-    cg_checksum_error->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
-    CreateSourceInformation(*cg_checksum_error);
-    CreateTimeChannel(*cg_checksum_error, "t");
-    CreateChecksumErrorChannels(*cg_checksum_error);
-    // Note that the cn_data_byte not is mandatory
-    cn_data_byte = cg_checksum_error->GetChannel("ETH_ChecksumError.DataBytes");
-  }
+IChannelGroup* EthConfigAdapter::CreateCustomConfig(IDataGroup& dg_block,
+  EthMessageType type) const {
+  dg_block.MandatoryMembersOnly(MandatoryMembersOnly());
 
-  // Add a CG-VLSD block that stores the signal data.
-  // The FixedLengthStorage is used for SD storage
-  if ( StorageType() != MdfStorageType::FixedLengthStorage &&
-      cn_data_byte != nullptr) {
-    // Need to add a special CG group for the data samples
-    if (IChannelGroup* cg_errors = dg_block.CreateChannelGroup("");
-        cg_errors != nullptr) {
-      cg_errors->Flags(CgFlag::VlsdChannel);
-      cn_data_byte->VlsdRecordId(cg_errors->RecordId());
-    }
-  }
+  IChannelGroup* channel_group = nullptr;
+  switch (type) {
+    case EthMessageType::ETH_Frame:
+      channel_group = CreateFrameGroup(dg_block);
+      break;
 
-  cn_data_byte = nullptr;
-  if (IChannelGroup* cg_length_error = dg_block.CreateChannelGroup("ETH_LengthError");
-     cg_length_error != nullptr) {
-   cg_length_error->PathSeparator('.');
-   cg_length_error->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
-   CreateSourceInformation(*cg_length_error);
-   CreateTimeChannel(*cg_length_error, "t");
-   CreateLengthErrorChannels(*cg_length_error);
-   // Note that the cn_data_byte not is mandatory
-   cn_data_byte = cg_length_error->GetChannel("ETH_LengthError.DataBytes");
-  }
+    case EthMessageType::ETH_ChecksumError:
+      channel_group = CreateChecksumErrorGroup(dg_block);
+      break;
 
-  // Add a CG-VLSD block that stores the signal data.
-  // The FixedLengthStorage is used for SD storage
-  if ( StorageType() != MdfStorageType::FixedLengthStorage &&
-    cn_data_byte != nullptr) {
-    // Need to add a special CG group for the data samples
-    if (IChannelGroup* cg_errors = dg_block.CreateChannelGroup("");
-       cg_errors != nullptr) {
-     cg_errors->Flags(CgFlag::VlsdChannel);
-     cn_data_byte->VlsdRecordId(cg_errors->RecordId());
-    }
-  }
+    case EthMessageType::ETH_LengthError:
+      channel_group = CreateLengthErrorGroup(dg_block);
+      break;
 
-  cn_data_byte = nullptr;
-  if (IChannelGroup* cg_receive_error = dg_block.CreateChannelGroup("ETH_ReceiveError");
-      cg_receive_error != nullptr) {
-    cg_receive_error->PathSeparator('.');
-    cg_receive_error->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
-    CreateSourceInformation(*cg_receive_error);
-    CreateTimeChannel(*cg_receive_error, "t");
-    CreateReceiveErrorChannels(*cg_receive_error);
-    // Note that the cn_data_byte not is mandatory
-    cn_data_byte = cg_receive_error->GetChannel("ETH_ReceiveError.DataBytes");
-  }
+    case EthMessageType::ETH_ReceiveError:
+      channel_group = CreateReceiveErrorGroup(dg_block);
+      break;
 
-  // Add a CG-VLSD block that stores the signal data.
-  // The FixedLengthStorage is used for SD storage
-  if ( StorageType() != MdfStorageType::FixedLengthStorage &&
-      cn_data_byte != nullptr) {
-    // Need to add a special CG group for the data samples
-    if (IChannelGroup* cg_errors = dg_block.CreateChannelGroup("");
-        cg_errors != nullptr) {
-      cg_errors->Flags(CgFlag::VlsdChannel);
-      cn_data_byte->VlsdRecordId(cg_errors->RecordId());
-    }
+    default:
+      break;
   }
-
+  return channel_group;
 }
 
 void EthConfigAdapter::CreateFrameChannels(IChannelGroup& group) const {
@@ -337,6 +275,115 @@ void EthConfigAdapter::CreateReceiveErrorChannels(IChannelGroup& group) const {
     padding_bytes->Unit("B");
   }
   CreateDataBytes(*cn_frame, 34);
+}
+
+IChannelGroup* EthConfigAdapter::CreateFrameGroup(IDataGroup& data_group) const {
+  const IChannel* cn_data_byte = nullptr; // Need to update the VLSD Record ID
+  IChannelGroup* cg_frame = data_group.CreateChannelGroup("ETH_Frame");
+  if (cg_frame != nullptr) {
+    cg_frame->PathSeparator('.');
+    cg_frame->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
+    CreateSourceInformation(*cg_frame);
+    CreateTimeChannel(*cg_frame, "t");
+    CreateFrameChannels(*cg_frame);
+    cn_data_byte = cg_frame->GetChannel("ETH_Frame.DataBytes");
+  }
+
+  // Add a CG-VLSD block that stores the signal data.
+  // The FixedLengthStorage is used for SD storage
+  if ( StorageType() == MdfStorageType::VlsdStorage &&
+      cn_data_byte != nullptr) {
+    // Need to add a special CG group for the data samples
+    if (IChannelGroup* cg_samples = data_group.CreateChannelGroup("");
+     cg_samples != nullptr) {
+      cg_samples->Flags(CgFlag::VlsdChannel);
+      cn_data_byte->VlsdRecordId(cg_samples->RecordId());
+    }
+  }
+  return cg_frame;
+}
+
+IChannelGroup* EthConfigAdapter::CreateChecksumErrorGroup(
+    IDataGroup& data_group) const {
+  IChannel* cn_data_byte = nullptr;
+  IChannelGroup* cg_checksum_error = data_group.CreateChannelGroup("ETH_ChecksumError");
+  if (cg_checksum_error != nullptr) {
+    cg_checksum_error->PathSeparator('.');
+    cg_checksum_error->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
+    CreateSourceInformation(*cg_checksum_error);
+    CreateTimeChannel(*cg_checksum_error, "t");
+    CreateChecksumErrorChannels(*cg_checksum_error);
+    // Note that the cn_data_byte not is mandatory
+    cn_data_byte = cg_checksum_error->GetChannel("ETH_ChecksumError.DataBytes");
+  }
+
+  // Add a CG-VLSD block that stores the signal data.
+  // The FixedLengthStorage is used for SD storage
+  if ( StorageType() == MdfStorageType::VlsdStorage &&
+      cn_data_byte != nullptr) {
+    // Need to add a special CG group for the data samples
+    if (IChannelGroup* cg_errors = data_group.CreateChannelGroup("");
+        cg_errors != nullptr) {
+      cg_errors->Flags(CgFlag::VlsdChannel);
+      cn_data_byte->VlsdRecordId(cg_errors->RecordId());
+    }
+  }
+  return cg_checksum_error;
+}
+
+IChannelGroup* EthConfigAdapter::CreateLengthErrorGroup(
+    IDataGroup& data_group) const {
+  IChannel* cn_data_byte = nullptr;
+  IChannelGroup* cg_length_error = data_group.CreateChannelGroup("ETH_LengthError");
+  if (cg_length_error != nullptr) {
+    cg_length_error->PathSeparator('.');
+    cg_length_error->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
+    CreateSourceInformation(*cg_length_error);
+    CreateTimeChannel(*cg_length_error, "t");
+    CreateLengthErrorChannels(*cg_length_error);
+    // Note that the cn_data_byte not is mandatory
+    cn_data_byte = cg_length_error->GetChannel("ETH_LengthError.DataBytes");
+  }
+
+  // Add a CG-VLSD block that stores the signal data.
+  // The FixedLengthStorage is used for SD storage
+  if ( StorageType() == MdfStorageType::VlsdStorage && cn_data_byte != nullptr) {
+    // Need to add a special CG group for the data samples
+    if (IChannelGroup* cg_errors = data_group.CreateChannelGroup("");
+       cg_errors != nullptr) {
+      cg_errors->Flags(CgFlag::VlsdChannel);
+      cn_data_byte->VlsdRecordId(cg_errors->RecordId());
+    }
+  }
+  return cg_length_error;
+}
+
+IChannelGroup* EthConfigAdapter::CreateReceiveErrorGroup(
+    IDataGroup& data_group) const {
+  IChannel* cn_data_byte = nullptr;
+  IChannelGroup* cg_receive_error = data_group.CreateChannelGroup("ETH_ReceiveError");
+  if (cg_receive_error != nullptr) {
+    cg_receive_error->PathSeparator('.');
+    cg_receive_error->Flags(CgFlag::PlainBusEvent | CgFlag::BusEvent);
+    CreateSourceInformation(*cg_receive_error);
+    CreateTimeChannel(*cg_receive_error, "t");
+    CreateReceiveErrorChannels(*cg_receive_error);
+    // Note that the cn_data_byte not is mandatory
+    cn_data_byte = cg_receive_error->GetChannel("ETH_ReceiveError.DataBytes");
+  }
+
+  // Add a CG-VLSD block that stores the signal data.
+  // The FixedLengthStorage is used for SD storage
+  if ( StorageType() == MdfStorageType::VlsdStorage &&
+      cn_data_byte != nullptr) {
+    // Need to add a special CG group for the data samples
+    if (IChannelGroup* cg_errors = data_group.CreateChannelGroup("");
+        cg_errors != nullptr) {
+      cg_errors->Flags(CgFlag::VlsdChannel);
+      cn_data_byte->VlsdRecordId(cg_errors->RecordId());
+    }
+  }
+  return cg_receive_error;
 }
 
 }  // namespace mdf

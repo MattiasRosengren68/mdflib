@@ -28,7 +28,7 @@ class ChildFrame : public wxDocMDIChildFrame {
 
   void Update() override;
  protected:
-  [[nodiscard]] MdfDocument* GetDoc();
+  [[nodiscard]] MdfDocument* GetDoc() const;
 
  private:
   wxTreeCtrl* left_ = nullptr;
@@ -67,7 +67,7 @@ class ChildFrame : public wxDocMDIChildFrame {
   void RedrawCnList(const mdf::detail::Cg3Block& cg3, const wxTreeItemId& root);
 
   void RedrawCnBlock(const mdf::detail::Cn4Block &cn4, const wxTreeItemId& root);
-  void RedrawCaBlock(const mdf::detail::Ca4Block &ca4, const wxTreeItemId& root);
+  void RedrawCaBlock(const mdf::detail::Ca4Block &ca4, const wxTreeItemId& root) const;
 
   void RedrawSrList(const mdf::detail::Cg4Block& cg, const wxTreeItemId& root);
   void RedrawSrList(const mdf::detail::Cg3Block& cg, const wxTreeItemId& root);
@@ -75,10 +75,10 @@ class ChildFrame : public wxDocMDIChildFrame {
   void RedrawDgBlock(const mdf::detail::Dg4Block& dg4, const wxTreeItemId& root);
   void RedrawDgBlock(const mdf::detail::Dg3Block& dg3, const wxTreeItemId& root);
 
-  void RedrawSiBlock(const mdf::detail::Si4Block& si, const wxTreeItemId& root);
+  void RedrawSiBlock(const mdf::detail::Si4Block& si, const wxTreeItemId& root) const;
 
   void RedrawCcBlock(const mdf::detail::Cc4Block& cc4, const wxTreeItemId& root);
-  void RedrawCcBlock(const mdf::detail::Cc3Block& cc3, const wxTreeItemId& root);
+  void RedrawCcBlock(const mdf::detail::Cc3Block& cc3, const wxTreeItemId& root) const;
 
   void RedrawCxList(const std::vector<std::unique_ptr<mdf::detail::MdfBlock>>& cx_list,
                     const wxTreeItemId& root);
@@ -86,11 +86,11 @@ class ChildFrame : public wxDocMDIChildFrame {
   void RedrawChBlock(const mdf::detail::Ch4Block& ch, const wxTreeItemId& root);
 
   void RedrawListView();
-  void RedrawHistoryView();
-  void RedrawMeasurementView();
-  void RedrawEventView();
-  void RedrawAttachmentView();
-  void RedrawHierarchyView();
+  void RedrawHistoryView() const;
+  void RedrawMeasurementView() const;
+  void RedrawEventView() const;
+  void RedrawAttachmentView() const;
+  void RedrawHierarchyView() const;
 
   void OnTreeSelected(wxTreeEvent& event);
   void OnTreeRightClick(wxTreeEvent& event);

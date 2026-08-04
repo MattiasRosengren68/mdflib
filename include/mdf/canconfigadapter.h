@@ -6,6 +6,7 @@
 #pragma once
 
 #include "mdf/iconfigadapter.h"
+#include "mdf/canmessage.h"
 
 namespace mdf {
 
@@ -16,6 +17,7 @@ class CanConfigAdapter : public IConfigAdapter {
   explicit CanConfigAdapter(const MdfWriter& writer);
 
   void CreateConfig(IDataGroup& dg_block) override;
+  IChannelGroup* CreateCustomConfig(IDataGroup& dg_block, MessageType message_type);
  protected:
 
   /** \brief Creates the composition channels for a data frame
@@ -113,11 +115,16 @@ class CanConfigAdapter : public IConfigAdapter {
   * <tr><td>8</td><td>Bus Channel</td></tr>
   * <tr><td>9:0</td><td>Direction (enumerate)</td></tr>
   * </table>
-  * @param group The The CAN Overload Frame channel group object.
+  * @param channel_group The The CAN Overload Frame channel group object.
    */
-  virtual void CreateCanOverloadFrameChannel(IChannelGroup& group);
+  virtual void CreateCanOverloadFrameChannel(IChannelGroup& channel_group) const;
 
  private:
+  IChannelGroup* CreateDataFrameGroup(IDataGroup& data_group) const;
+  IChannelGroup* CreateRemoteFrameGroup(IDataGroup& data_group) const;
+  IChannelGroup* CreateErrorFrameGroup(IDataGroup& data_group) const;
+  IChannelGroup* CreateOverloadFrameGroup(IDataGroup& data_group) const;
+
   IChannel* CreateDataBytesChannel(IChannel& parent_channel,
                                    uint16_t byte_offset) const;
   IChannel* CreateDirChannel(IChannel& parent_channel,

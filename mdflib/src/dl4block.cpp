@@ -19,6 +19,9 @@ std::string MakeFlagString(uint8_t flag) {
 }  // namespace
 namespace mdf::detail {
 
+int64_t Dl4Block::Index() const { return FilePosition(); }
+std::string Dl4Block::BlockType() const { return MdfBlock::BlockType(); }
+
 void Dl4Block::GetBlockProperty(BlockPropertyList &dest) const {
   MdfBlock::GetBlockProperty(dest);
 

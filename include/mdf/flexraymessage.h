@@ -76,14 +76,17 @@ class IFlexRayEvent {
 
   virtual void ToRaw(SampleRecord& sample) const = 0;
 
-  void DataGroup(const IDataGroup* data_group) const { data_group_ = data_group; }
-  void ChannelGroup(const IChannelGroup* channel_group) const { channel_group_ = channel_group; }
-
- protected:
-  explicit IFlexRayEvent(FlexRayMessageType type);
+  void DataGroup(const IDataGroup* data_group) const {
+    data_group_ = data_group;
+  }
+  void ChannelGroup(const IChannelGroup* channel_group) const {
+    channel_group_ = channel_group;
+  }
 
   virtual void DataBytes(std::vector<uint8_t> bytes);
   [[nodiscard]] virtual const std::vector<uint8_t>& DataBytes() const;
+ protected:
+  explicit IFlexRayEvent(FlexRayMessageType type);
 
   mutable const IDataGroup* data_group_ = nullptr;
   mutable const IChannelGroup* channel_group_ = nullptr;
@@ -131,12 +134,12 @@ class FlexRayFrame : public IFlexRayEvent {
 
   void FrameLength(uint32_t length) { frame_length_ = length; }
   [[nodiscard]] uint32_t FrameLength() const { return frame_length_; }
+  void ToRaw(SampleRecord& sample) const override;
 
  protected:
   explicit FlexRayFrame(FlexRayMessageType type);
-  void ToRaw(SampleRecord& sample) const override;
 
- private:
+private:
   uint8_t payload_length_ = 0; /// 7-bit payload length (words).
   uint32_t crc_ = 0; ///< 24-bit trailer checksum.
   uint16_t header_crc_ = 0; ///< 11-bit checksum.
@@ -176,8 +179,8 @@ class FlexRayPdu : public IFlexRayEvent {
 
   void BitOffset(uint8_t offset) { pdu_bit_offset_ = offset; }
   [[nodiscard]] uint8_t BitOffset() const { return pdu_bit_offset_; }
- protected:
   void ToRaw(SampleRecord& sample) const override;
+
  private:
   using IFlexRayEvent::Direction; // Hide the usage of this function
 
@@ -195,8 +198,8 @@ class FlexRayFrameHeader : public FlexRayFrame {
   FlexRayFrameHeader();
   void FillDataBytes(std::vector<uint8_t> bytes);
   [[nodiscard]] const std::vector<uint8_t>& FillDataBytes() const;
- protected:
   void ToRaw(SampleRecord& sample) const override;
+
  private:
   using FlexRayFrame::DataBytes;
 };
@@ -204,9 +207,8 @@ class FlexRayFrameHeader : public FlexRayFrame {
 class FlexRayNullFrame : public FlexRayFrame {
  public:
   FlexRayNullFrame();
- protected:
+
   void ToRaw(SampleRecord& sample) const override;
- private:
 
 };
 
@@ -228,7 +230,7 @@ class FlexRayErrorFrame : public FlexRayFrame {
 
   void Valid(bool valid) { valid_ = valid; }
   [[nodiscard]] bool Valid() const { return valid_; }
- protected:
+
   void ToRaw(SampleRecord& sample) const override;
  private:
   bool syntax_error_ = false;
@@ -250,7 +252,7 @@ class FlexRaySymbol : public IFlexRayEvent {
 
   void Type(FlexRaySymbolType type) { type_ = type; }
   [[nodiscard]] FlexRaySymbolType Type() const { return type_; }
- protected:
+
   void ToRaw(SampleRecord& sample) const override;
  private:
   using IFlexRayEvent::FrameId;

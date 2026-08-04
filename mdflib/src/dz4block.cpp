@@ -30,6 +30,9 @@ std::string MakeZipTypeString(uint8_t type) {
 
 namespace mdf::detail {
 
+int64_t Dz4Block::Index() const { return FilePosition(); }
+std::string Dz4Block::BlockType() const { return MdfBlock::BlockType(); }
+
 void Dz4Block::GetBlockProperty(BlockPropertyList &dest) const {
   MdfBlock::GetBlockProperty(dest);
   dest.emplace_back("Information", "", "", BlockItemType::HeaderItem);

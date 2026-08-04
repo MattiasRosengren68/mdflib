@@ -286,14 +286,14 @@ TEST_F(TestLinLogger, Mdf4LinConfig) {
 
     // Check that all values are valid.
     const auto& valid_list = observer->GetValidList();
-    const bool all_valid =  std::all_of(valid_list.cbegin(), valid_list.cend(),
-                                       [] (const bool& valid) -> bool {
+    const bool all_valid =  std::ranges::all_of(valid_list,
+      [] (const bool& valid) -> bool {
       return valid;
     });
     EXPECT_TRUE(all_valid) << observer->Name();
 
     const auto& name = observer->Name();
-    if (unique_list.find(name) == unique_list.cend()) {
+    if (!unique_list.contains(name)) {
       unique_list.emplace(name);
     } else if (name != "t")  {
       EXPECT_TRUE(false) << "Duplicate: " << name;
@@ -408,8 +408,8 @@ TEST_F(TestLinLogger, Mdf4LinMandatory) {
     ASSERT_TRUE(observer);
     EXPECT_EQ(observer->NofSamples(), 100'000);
     const auto& valid_list = observer->GetValidList();
-    const bool all_valid =  std::all_of(valid_list.cbegin(), valid_list.cend(),
-                                       [] (const bool& valid) -> bool {
+    const bool all_valid =  std::ranges::all_of( valid_list,
+           [] (const bool& valid) -> bool {
       return valid;
     });
 
@@ -417,11 +417,140 @@ TEST_F(TestLinLogger, Mdf4LinMandatory) {
 
     // Verify that the CAN_RemoteFrame.DLC exist
     const auto name = observer->Name();
-    if (unique_list.find(name) == unique_list.cend()) {
+    if (!unique_list.contains(name)) {
       unique_list.emplace(name);
     } else if (name != "t")  {
       EXPECT_TRUE(false) << "Duplicate: " << name;
     }
+  }
+}
+
+TEST_F(TestLinLogger, TestCustomConfig) {
+  if (kSkipTest) {
+    GTEST_SKIP();
+  }
+
+  constexpr size_t max_sample = 10;
+  const std::vector<uint8_t> sample_data({0xAA, 0xBB});
+  path mdf_file(kTestDir);
+  mdf_file.append("lin_custom_sorted.mf4");
+  {
+    auto writer = MdfFactory::CreateMdfWriter(MdfWriterType::MdfBusLogger);
+    ASSERT_TRUE(writer);
+    writer->Init(mdf_file.string());
+
+    auto* header = writer->Header();
+    ASSERT_TRUE(header != nullptr);
+    HdComment hd_comment("Test of LIN Custom Config");
+    hd_comment.Author("Ingemar Hedvall");
+    hd_comment.Department("IH Development");
+    hd_comment.Project("LIN bus support");
+    hd_comment.Subject("Testing LIN support");
+    hd_comment.TimeSource(MdString("PC UTC Time"));
+    header->SetHdComment(hd_comment);
+
+    auto* history = header->CreateFileHistory();
+    ASSERT_TRUE(history != nullptr);
+    FhComment fh_comment("Initial file change");
+    fh_comment.ToolId("Google Unit Test");
+    fh_comment.ToolVendor("ACME Road Runner Company");
+    fh_comment.ToolVersion("1.0");
+    fh_comment.UserName("ihedvall");
+    history->SetFhComment(fh_comment);
+
+    writer->BusType(MdfBusType::LIN);
+    writer->StorageType(MdfStorageType::MlsdStorage);
+    writer->PreTrigTime(0.0);
+    writer->CompressData(false);
+    writer->MandatoryMembersOnly(false);
+
+    LinConfigAdapter lin_config(*writer);
+     // Create a DG block
+    IDataGroup* dg_data_frame = header->CreateDataGroup();
+    ASSERT_TRUE(dg_data_frame != nullptr);
+
+     IChannelGroup* lin_frame = lin_config.CreateCustomConfig(
+      *dg_data_frame, LinMessageType::LIN_Frame);
+    ASSERT_TRUE(lin_frame != nullptr);
+
+    IDataGroup* dg_error_frame = header->CreateDataGroup();
+    ASSERT_TRUE(dg_error_frame != nullptr);
+    IChannelGroup* error_frame = lin_config.CreateCustomConfig(
+      *dg_error_frame, LinMessageType::LIN_ReceiveError);
+    ASSERT_TRUE(error_frame != nullptr);
+
+    writer->InitMeasurement();
+    uint64_t tick_time = TimeStampToNs();
+    writer->StartMeasurement(tick_time);
+
+    for (size_t sample = 0; sample < max_sample; ++sample) {
+
+      LinMessage d_frame(LinMessageType::LIN_Frame);
+      d_frame.DataBytes(sample_data);
+
+      LinMessage e_frame(LinMessageType::LIN_ReceiveError);
+      e_frame.DataBytes(sample_data);
+
+      writer->SaveLinMessage(*dg_data_frame, *lin_frame, tick_time, d_frame);
+      tick_time += 1'000'000;
+      writer->SaveLinMessage(*dg_error_frame, *error_frame, tick_time, e_frame);
+      tick_time += 1'000'000;
+    }
+
+    writer->StopMeasurement(tick_time);
+    writer->FinalizeMeasurement();
+  }
+
+  {
+    MdfReader reader(mdf_file.string());
+    ChannelObserverList observer_list;
+
+    ASSERT_TRUE(reader.IsOk());
+    ASSERT_TRUE(reader.ReadEverythingButData());
+    const MdfFile* file = reader.GetFile();
+    ASSERT_TRUE(file != nullptr);
+
+    const IHeader* header = file->Header();
+    ASSERT_TRUE(header != nullptr);
+
+    const auto dg_list = header->DataGroups();
+    EXPECT_EQ(dg_list.size(), 2);
+
+    for (IDataGroup* data_group : dg_list) {
+      ASSERT_TRUE(data_group != nullptr);
+
+      const auto cg_list = data_group->ChannelGroups();
+      EXPECT_EQ(cg_list.size(), 1);
+      for (IChannelGroup* channel_group : cg_list) {
+        ASSERT_TRUE(channel_group != nullptr);
+        CreateChannelObserverForChannelGroup(*data_group, *channel_group,
+                                             observer_list);
+      }
+      reader.ReadData(*data_group);
+      bool data_ok = false;
+      for (auto& observer : observer_list) {
+        ASSERT_TRUE(observer);
+        const uint64_t nof_samples = observer->NofSamples();
+
+        EXPECT_EQ(nof_samples, max_sample);
+        const auto& channel = observer->Channel();
+        if (channel.DataType() == ChannelDataType::ByteArray &&
+            (channel.Type() == ChannelType::VariableLength ||
+             channel.Type() == ChannelType::MaxLength) ) {
+          for (uint64_t sample = 0; sample < max_sample; ++sample) {
+            std::vector<uint8_t> value_list;
+            const bool valid = observer->GetEngValue(sample, value_list);
+            EXPECT_TRUE(valid) << "Sample: " << sample;
+            EXPECT_EQ(value_list, sample_data);
+            data_ok = true;
+          }
+        }
+
+
+      }
+      EXPECT_TRUE(data_ok);
+    }
+    reader.Close();
   }
 
 }

@@ -5,7 +5,10 @@
 
 #pragma once
 
+#include "mdf/samplerecord.h"
 #include "samplequeue.h"
+#include "cn4block.h"
+#include "dg4block.h"
 
 namespace mdf::detail {
 
@@ -16,11 +19,10 @@ class Writer4SampleQueue : public SampleQueue {
                      IDataGroup& data_group);
   ~Writer4SampleQueue() override;
 
- protected:
-  uint64_t offset_ = 0;
   void SaveQueue(std::unique_lock<std::mutex>& lock) override;
   void CleanQueue(std::unique_lock<std::mutex>& lock) override;
-
+ protected:
+  uint64_t offset_ = 0;
 
   /** \brief Calculates number of DZ blocks in the sample queue */
   [[nodiscard]] size_t CalculateNofDzBlocks() const;
@@ -31,7 +33,11 @@ class Writer4SampleQueue : public SampleQueue {
 
   void SetLastPosition(std::streambuf& buffer) override;
 
-
+  static void UpdateSdIndex(const Cn4Block& cn4, uint64_t sd_index,
+    SampleRecord& sample);
+  Cg4Block* FindVlsdCg4Block(const Dg4Block* dg4,
+                             const Cn4Block* cn4,
+                             const SampleRecord& sample) const;
 };
 
 }  // namespace mdf

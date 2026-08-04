@@ -34,6 +34,8 @@ constexpr std::array<size_t,16> kDataLengthCode =
 
 namespace mdf {
 
+CanMessage::CanMessage(MessageType type) : message_type_(type) {}
+
 void CanMessage::MessageId(uint32_t msg_id) {
   message_id_ = msg_id;
   if (msg_id > k11BitMask) {

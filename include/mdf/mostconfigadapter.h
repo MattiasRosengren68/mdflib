@@ -6,6 +6,7 @@
 #pragma once
 
 #include "mdf/iconfigadapter.h"
+#include "mdf/mostmessage.h"
 
 namespace mdf {
 
@@ -15,6 +16,7 @@ class MostConfigAdapter : public IConfigAdapter {
   explicit MostConfigAdapter( const MdfWriter& writer);
 
   void CreateConfig(IDataGroup& dg_block) override;
+  IChannelGroup* CreateCustomConfig(IDataGroup& dg_block, MostMessageType type);
 
  protected:
 
@@ -54,7 +56,7 @@ class MostConfigAdapter : public IConfigAdapter {
   * </table>
   * @param data_group Reference to the data group.
   */
-  void CreateMostMessage(IDataGroup& data_group) const;
+  IChannelGroup* CreateMostMessage(IDataGroup& data_group) const;
 
   /** \brief Creates the MOST_EthernetPacket channel group.
  *
@@ -88,7 +90,7 @@ class MostConfigAdapter : public IConfigAdapter {
  * </table>
  * @param data_group Reference to the data group.
    */
-  void CreateMostEthernetPacket(IDataGroup& data_group) const;
+  IChannelGroup* CreateMostEthernetPacket(IDataGroup& data_group) const;
 
   /** \brief Creates the MOST_Packet channel group.
  *
@@ -120,7 +122,7 @@ class MostConfigAdapter : public IConfigAdapter {
  * </table>
  * @param data_group Reference to the data group.
    */
-  void CreateMostPacket(IDataGroup& data_group) const ;
+  IChannelGroup* CreateMostPacket(IDataGroup& data_group) const ;
 
  /** \brief Creates the MOST_SignalState channel group.
  *
@@ -137,7 +139,7 @@ class MostConfigAdapter : public IConfigAdapter {
  * </table>
  * @param data_group Reference to the data group.
    */
-  void CreateMostSignalState(IDataGroup& data_group) const;
+  IChannelGroup* CreateMostSignalState(IDataGroup& data_group) const;
 
   /** \brief Creates the MOST_MaxPosInfo channel group.
  *
@@ -154,7 +156,7 @@ class MostConfigAdapter : public IConfigAdapter {
  * </table>
  * @param data_group Reference to the data group.
    */
-  void CreateMostMaxPosInfo(IDataGroup& data_group) const;
+  IChannelGroup* CreateMostMaxPosInfo(IDataGroup& data_group) const;
 
   /** \brief Creates the MOST_BoundDesc channel group.
  *
@@ -171,7 +173,7 @@ class MostConfigAdapter : public IConfigAdapter {
  * </table>
  * @param data_group Reference to the data group.
    */
-  void CreateMostBoundDesc(IDataGroup& data_group) const ;
+  IChannelGroup* CreateMostBoundDesc(IDataGroup& data_group) const ;
 
   /** \brief Creates the MOST_AllocTable channel group.
  *
@@ -191,7 +193,7 @@ class MostConfigAdapter : public IConfigAdapter {
  * </table>
  * @param data_group Reference to the data group.
    */
-  void CreateMostAllocTable(IDataGroup& data_group) const ;
+  IChannelGroup* CreateMostAllocTable(IDataGroup& data_group) const ;
 
     /** \brief Creates the MOST_SysLockState channel group.
    *
@@ -208,7 +210,7 @@ class MostConfigAdapter : public IConfigAdapter {
    * </table>
    * @param data_group Reference to the data group.
      */
-    void CreateMostSysLockState(IDataGroup& data_group) const;
+    IChannelGroup* CreateMostSysLockState(IDataGroup& data_group) const;
 
     /** \brief Creates the MOST_ShutdownFlag channel group.
    *
@@ -225,7 +227,7 @@ class MostConfigAdapter : public IConfigAdapter {
    * </table>
    * @param data_group Reference to the data group.
      */
-    void CreateMostShutdownFlag(IDataGroup& data_group) const;
+  IChannelGroup* CreateMostShutdownFlag(IDataGroup& data_group) const;
 
  private:
   void CreateEthernetPacketChannel(IChannelGroup& channel_group) const;

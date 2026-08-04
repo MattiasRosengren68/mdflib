@@ -6,6 +6,7 @@
 #pragma once
 
 #include "mdf/iconfigadapter.h"
+#include "mdf/flexraymessage.h"
 
 namespace mdf {
 
@@ -15,7 +16,7 @@ class FlexRayConfigAdapter : public IConfigAdapter {
   explicit FlexRayConfigAdapter( const MdfWriter& writer);
 
   void CreateConfig(IDataGroup& dg_block) override;
-
+  IChannelGroup* CreateCustomConfig(IDataGroup& dg_block, FlexRayMessageType type);
  protected:
 
   /** \brief Creates the FLX_Frame channel group.
@@ -49,11 +50,11 @@ class FlexRayConfigAdapter : public IConfigAdapter {
   * <tr><td>19:3</td><td>Sync Frame Flag (boolean)</td></tr>
   * <tr><td>19:4</td><td>Startup Frame Flag (boolean)</td></tr>
   * <tr><td>20-23</td><td>Frame Length in ns</td></tr>
-  * <tr><td>24-33</td><td>Offset to VLSD/SD (64-bit). Must be last</td></tr>
+  * <tr><td>24-31</td><td>Offset to VLSD/SD (64-bit). Must be last</td></tr>
   * </table>
   * @param data_group Reference to the data group.
    */
-   void CreateFlxFrame(IDataGroup& data_group) const;
+   IChannelGroup* CreateFlxFrame(IDataGroup& data_group) const;
 
   /** \brief Creates the FLX_Pdu channel group.
   *
@@ -87,7 +88,7 @@ class FlexRayConfigAdapter : public IConfigAdapter {
   * </table>
   * @param data_group Reference to the data group.
    */
-  void CreateFlxPdu(IDataGroup& data_group) const;
+  IChannelGroup* CreateFlxPdu(IDataGroup& data_group) const;
 
     /** \brief Creates the FLX_FrameHeader channel group.
     *
@@ -119,11 +120,11 @@ class FlexRayConfigAdapter : public IConfigAdapter {
     * <tr><td>19:3</td><td>Sync Frame Flag (boolean)</td></tr>
     * <tr><td>19:4</td><td>Startup Frame Flag (boolean)</td></tr>
     * <tr><td>20-23</td><td>Frame Length in ns</td></tr>
-    * <tr><td>24-33</td><td>Offset to VLSD/SD (64-bit). Must be last</td></tr>
+    * <tr><td>24-31</td><td>Offset to VLSD/SD (64-bit). Must be last</td></tr>
     * </table>
     * @param data_group Reference to the data group.
      */
-    void CreateFlxFrameHeader(IDataGroup& data_group) const;
+   IChannelGroup* CreateFlxFrameHeader(IDataGroup& data_group) const;
 
 
   /** \brief Creates the FLX_NullFrame channel group.
@@ -156,11 +157,11 @@ class FlexRayConfigAdapter : public IConfigAdapter {
   * <tr><td>19:3</td><td>Sync Frame Flag (boolean)</td></tr>
   * <tr><td>19:4</td><td>Startup Frame Flag (boolean)</td></tr>
   * <tr><td>20-23</td><td>Frame Length in ns</td></tr>
-  * <tr><td>24-33</td><td>Offset to VLSD/SD (64-bit). Must be last</td></tr>
+  * <tr><td>24-31</td><td>Offset to VLSD/SD (64-bit). Must be last</td></tr>
   * </table>
   * @param data_group Reference to the data group.
      */
-    void CreateFlxNullFrame(IDataGroup& data_group) const;
+    IChannelGroup* CreateFlxNullFrame(IDataGroup& data_group) const;
 
     /** \brief Creates the FLX_ErrorFrame channel group.
   *
@@ -197,11 +198,11 @@ class FlexRayConfigAdapter : public IConfigAdapter {
   * <tr><td>20:0</td><td>TX Conflict Flag (boolean)</td></tr>
   * <tr><td>20:1</td><td>Valid Flag (boolean)</td></tr>
   * <tr><td>21-24</td><td>Frame Length in ns</td></tr>
-  * <tr><td>25-34</td><td>Offset to VLSD/SD (64-bit). Must be last</td></tr>
+  * <tr><td>25-33</td><td>Offset to VLSD/SD (64-bit). Must be last</td></tr>
   * </table>
   * @param data_group Reference to the data group.
      */
-    void CreateFlxErrorFrame(IDataGroup& data_group) const;
+    IChannelGroup* CreateFlxErrorFrame(IDataGroup& data_group) const;
 
     /** \brief Creates the FLX_Symbol channel group.
   *
@@ -226,7 +227,7 @@ class FlexRayConfigAdapter : public IConfigAdapter {
   * </table>
   * @param data_group Reference to the data group.
      */
-    void CreateFlxSymbol(IDataGroup& data_group) const;
+  IChannelGroup* CreateFlxSymbol(IDataGroup& data_group) const;
  private:
   void CreateFrameChannel(IChannelGroup& data_group) const;
   void CreatePduChannel(IChannelGroup& data_group) const;

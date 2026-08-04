@@ -5,12 +5,14 @@
 #include "blockproperty.h"
 
 #include <sstream>
+#include <utility>
 
 namespace mdf::detail {
 
-BlockProperty::BlockProperty(const std::string &label, const std::string &value,
-                             const std::string &desc, BlockItemType type)
-    : label_(label), value_(value), description_(desc), type_(type) {}
+BlockProperty::BlockProperty(std::string label, std::string value,
+                             std::string desc, BlockItemType type)
+    : label_(std::move(label)), value_(std::move(value)),
+      description_(std::move(desc)), type_(type) {}
 /// Converts the the string value to a file position of the block.
 /// It assumes the value is formatted as an hex value so this function
 /// is only valid for link property types.
@@ -19,18 +21,19 @@ int64_t BlockProperty::Link() const {
   if (Type() != BlockItemType::LinkItem) {
     return 0;
   }
+  // Skip any initial 0x prefix
   if (value_.size() <= 2) {
     return 0;
   }
-  int64_t pos = 0;
+  int64_t file_pos = 0;
   try {
-    std::stringstream temp;
-    temp << std::hex << value_.substr(2);
-    temp >> pos;
+    std::istringstream temp(value_.substr(2));
+    temp.imbue(std::locale::classic());
+    temp >> std::hex >> file_pos;
   } catch (const std::exception &) {
     return 0;
   }
-  return pos;
+  return file_pos;
 }
 
 }  // namespace mdf::detail

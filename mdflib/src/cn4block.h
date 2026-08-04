@@ -25,9 +25,7 @@ class Cn4Block : public DataListBlock, public IChannel {
 
   Cn4Block();
   [[nodiscard]] int64_t Index() const override;
-  [[nodiscard]] std::string BlockType() const override {
-    return MdfBlock::BlockType();
-  }
+  [[nodiscard]] std::string BlockType() const override;
 
   void Name(const std::string& name) override;
   [[nodiscard]] std::string Name() const override;
@@ -68,6 +66,7 @@ class Cn4Block : public DataListBlock, public IChannel {
 
   [[nodiscard]] bool IsDecimalUsed() const override;
 
+  [[nodiscard]] IBlock* GetVlsdBlock() const override;
   void GetBlockProperty(BlockPropertyList& dest) const override;
   [[nodiscard]] MdfBlock* Find(int64_t index) const override;
   uint64_t Read(std::streambuf& buffer) override;

@@ -367,6 +367,7 @@ class IChannel : public IBlock  {
     return vlsd_record_id_;
   }
 
+  [[nodiscard]] virtual IBlock* GetVlsdBlock() const;
   /** \brief Parse out the channel value from a data record.
    *
    * Internally used function that parse out the channel value from
@@ -672,7 +673,7 @@ bool IChannel::GetChannelValue(const std::vector<uint8_t> &record_buffer,
     case ChannelDataType::MimeStream:
     case ChannelDataType::MimeSample:
     case ChannelDataType::ByteArray: {
-      if (Type() ==ChannelType::VariableLength && VlsdRecordId() != 0) {
+      if (Type() == ChannelType::VariableLength && VlsdRecordId() != 0) {
         uint64_t offset = 0;
         valid = GetUnsignedValue(record_buffer, offset);
         dest = static_cast<T>(offset);

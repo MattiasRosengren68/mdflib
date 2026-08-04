@@ -28,6 +28,19 @@ std::string MakeZipTypeString(uint8_t type) {
 }  // namespace
 
 namespace mdf::detail {
+
+int64_t Hl4Block::Index() const { return FilePosition(); }
+std::string Hl4Block::BlockType() const { return MdfBlock::BlockType(); }
+
+std::string_view Hl4Block::TypeAsString() const {
+    constexpr std::array<std::string_view, 2> type_list = {
+      "Deflate",
+      "Transpose and Deflate"
+    };
+    const size_t type = type_;
+    return type < type_list.size() ? type_list[type] : "";
+}
+
 void Hl4Block::GetBlockProperty(BlockPropertyList &dest) const {
   MdfBlock::GetBlockProperty(dest);
 

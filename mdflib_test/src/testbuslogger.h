@@ -4,15 +4,19 @@
 */
 
 #pragma once
+
 #include <gtest/gtest.h>
+
+#include "mdf/mdfenumerates.h"
 
 namespace mdf::test {
 
-class TestBusLogger : public testing::Test {
+class TestBusLogger : public ::testing::Test {
    public:
     static void SetUpTestSuite();
     static void TearDownTestSuite();
 };
+
 
 }  // namespace mdf::test
 

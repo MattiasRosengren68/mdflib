@@ -74,15 +74,15 @@ class SampleQueue {
     return queue_;
   }
   void IncrementNofSamples(uint64_t record_id) const;
+  virtual void SetLastPosition(std::streambuf& buffer);
+  void RecalculateTime(uint64_t record_id, SampleRecord& sample);
+  void SetDataPosition(std::streambuf& file);
  private:
   std::deque<SampleRecord> queue_;
   std::atomic<size_t> size_ = 0; ///< Used to trig flushing to disc.
   size_t nof_dg_blocks_ = 0;
 
-  void RecalculateTime(uint64_t record_id, SampleRecord& sample);
 
-  virtual void SetLastPosition(std::streambuf& buffer);
-  void SetDataPosition(std::streambuf& file);
 };
 
 }  // namespace mdf::detail

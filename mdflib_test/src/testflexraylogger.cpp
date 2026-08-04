@@ -261,11 +261,11 @@ TEST_F(TestFlexRayLogger, FlexRayVlsdStorage) {
 
     auto* header = writer->Header();
     ASSERT_TRUE(header != nullptr);
-    HdComment hd_comment("Test of MOST VLSD Storage");
+    HdComment hd_comment("Test of FlexRay VLSD Storage");
     hd_comment.Author("Ingemar Hedvall");
     hd_comment.Department("IH Development");
     hd_comment.Project("MOST bus support");
-    hd_comment.Subject("Testing MOST support");
+    hd_comment.Subject("Testing FlexRay support");
     hd_comment.TimeSource(MdString("PC UTC Time"));
     header->SetHdComment(hd_comment);
 
@@ -417,7 +417,7 @@ TEST_F(TestFlexRayLogger, FlexRayVlsdStorage) {
 
 }
 
-TEST_F(TestFlexRayLogger, FlexRayCompresStorage) {
+TEST_F(TestFlexRayLogger, FlexRayCompressStorage) {
  if (kSkipTest) {
    GTEST_SKIP();
  }
@@ -437,11 +437,11 @@ TEST_F(TestFlexRayLogger, FlexRayCompresStorage) {
 
    auto* header = writer->Header();
    ASSERT_TRUE(header != nullptr);
-   HdComment hd_comment("Test of MOST VLSD Storage");
+   HdComment hd_comment("Test of FlexRay VLSD Storage");
    hd_comment.Author("Ingemar Hedvall");
    hd_comment.Department("IH Development");
    hd_comment.Project("MOST bus support");
-   hd_comment.Subject("Testing MOST support");
+   hd_comment.Subject("Testing FlexRay support");
    hd_comment.TimeSource(MdString("PC UTC Time"));
    header->SetHdComment(hd_comment);
 
@@ -585,6 +585,393 @@ TEST_F(TestFlexRayLogger, FlexRayCompresStorage) {
      EXPECT_EQ(observer->NofSamples(), max_sample) << observer->Name();
    }
  }
+
+}
+
+
+TEST_F(TestFlexRayLogger, CheckFrameSamples) {
+  if (kSkipTest) {
+    GTEST_SKIP();
+  }
+
+  path mdf_file(kTestDir);
+  mdf_file.append("flx_samples.mf4");
+  {
+    constexpr size_t max_sample = 100;
+    auto writer = MdfFactory::CreateMdfWriter(MdfWriterType::MdfBusLogger);
+    ASSERT_TRUE(writer);
+    writer->Init(mdf_file.string());
+
+    auto* header = writer->Header();
+    ASSERT_TRUE(header != nullptr);
+    HdComment hd_comment("Test of FlexRay Samples");
+    hd_comment.Author("Ingemar Hedvall");
+    hd_comment.Department("IH Development");
+    hd_comment.Project("FlexRay bus support");
+    hd_comment.Subject("Testing FlexRay support");
+    hd_comment.TimeSource(MdString("PC UTC Time"));
+    header->SetHdComment(hd_comment);
+
+    auto* history = header->CreateFileHistory();
+    ASSERT_TRUE(history != nullptr);
+    FhComment fh_comment("Initial file change");
+    fh_comment.ToolId("Google Unit Test");
+    fh_comment.ToolVendor("ACME Road Runner Company");
+    fh_comment.ToolVersion("1.0");
+    fh_comment.UserName("ihedvall");
+    history->SetFhComment(fh_comment);
+
+    writer->BusType(MdfBusType::FlexRay);
+    writer->StorageType(MdfStorageType::VlsdStorage);
+    writer->PreTrigTime(0.0);
+    writer->CompressData(false);
+
+    // Create a DG block
+    auto* last_dg = header->CreateDataGroup();
+    ASSERT_TRUE(last_dg != nullptr);
+
+    // Create a MOST
+    FlexRayConfigAdapter flx_config(*writer);
+    flx_config.CreateConfig(*last_dg);
+
+    IChannelGroup* flx_frame = last_dg->GetChannelGroup("FLX_Frame");
+    ASSERT_TRUE(flx_frame != nullptr);
+
+    writer->InitMeasurement();
+    uint64_t tick_time = TimeStampToNs();
+    writer->StartMeasurement(tick_time);
+
+    for (size_t sample = 0; sample < max_sample; ++sample) {
+      std::vector<uint8_t> data;
+      const auto length = static_cast<uint8_t>(sample);
+      data.assign(length, length);
+
+      FlexRayFrame frame;
+      frame.BusChannel(123);
+      frame.FrameId(345);
+      frame.CycleCount(static_cast<uint8_t>(sample & 0x3F));
+      frame.Direction((sample % 2) == 0 ? FlexRayDirection::Tx : FlexRayDirection::Rx);
+      frame.PayloadLength(length / 2);
+      frame.DataBytes(data);
+      frame.Crc(1234);
+      frame.HeaderCrc(345);
+      frame.Reserved((sample % 2) == 0);
+      frame.PayloadPreamble((sample % 2) == 1);
+
+
+      // Add dummy message to all for message types. Not realistic
+      // but makes the test simpler.
+      writer->SaveFlexRayMessage(*last_dg, *flx_frame, tick_time, frame);
+      tick_time += 1'000'000;
+       writer->SaveFlexRayMessage(*last_dg, *flx_frame, tick_time, frame);
+      tick_time += 1'000'000;
+    }
+
+    writer->StopMeasurement(tick_time);
+    writer->FinalizeMeasurement();
+  }
+  auto sortTask =
+          mdf::MdfFactory::CreateTask(mdf::MdfTaskType::MdfSortingTask);
+
+  sortTask->SourceFile(mdf_file.string());
+  path sorted_file = mdf_file.parent_path();
+  sorted_file /= mdf_file.stem();
+  sorted_file += "_sorted";
+  sorted_file += mdf_file.extension();
+  sortTask->DestinationFile(sorted_file.string());
+  sortTask->SkipIfNoSamples(true);
+  sortTask->Run();
+  {
+    MdfReader reader(mdf_file.string());
+    ChannelObserverList observer_list;
+
+    ASSERT_TRUE(reader.IsOk());
+    ASSERT_TRUE(reader.ReadEverythingButData());
+    const MdfFile* file = reader.GetFile();
+    ASSERT_TRUE(file != nullptr);
+
+    const IHeader* header = file->Header();
+    ASSERT_TRUE(header != nullptr);
+
+    const auto dg_list = header->DataGroups();
+    EXPECT_EQ(dg_list.size(), 1);
+
+    for (IDataGroup* data_group : dg_list) {
+      ASSERT_TRUE(data_group != nullptr);
+      const auto cg_list = data_group->ChannelGroups();
+      EXPECT_EQ(cg_list.size(), 11);
+      for (IChannelGroup* channel_group : cg_list) {
+        ASSERT_TRUE(channel_group != nullptr);
+        CreateChannelObserverForChannelGroup(*data_group, *channel_group,
+                                             observer_list);
+      }
+      reader.ReadData(*data_group);
+    }
+    reader.Close();
+  }
+
+}
+
+TEST_F(TestFlexRayLogger, TestData) {
+  if (kSkipTest) {
+    GTEST_SKIP();
+  }
+  constexpr size_t max_sample = 10;
+  const std::vector<uint8_t> sample_data({0xAA, 0xBB});
+  path mdf_file(kTestDir);
+  mdf_file.append("flx_data.mf4");
+  {
+    auto writer = MdfFactory::CreateMdfWriter(MdfWriterType::MdfBusLogger);
+    ASSERT_TRUE(writer);
+    writer->Init(mdf_file.string());
+
+    auto* header = writer->Header();
+    ASSERT_TRUE(header != nullptr);
+    HdComment hd_comment("Test of FlexRay Data");
+    hd_comment.Author("Ingemar Hedvall");
+    hd_comment.Department("IH Development");
+    hd_comment.Project("FlexRay bus support");
+    hd_comment.Subject("Testing FlexRay support");
+    hd_comment.TimeSource(MdString("PC UTC Time"));
+    header->SetHdComment(hd_comment);
+
+    auto* history = header->CreateFileHistory();
+    ASSERT_TRUE(history != nullptr);
+    FhComment fh_comment("Initial file change");
+    fh_comment.ToolId("Google Unit Test");
+    fh_comment.ToolVendor("ACME Road Runner Company");
+    fh_comment.ToolVersion("1.0");
+    fh_comment.UserName("ihedvall");
+    history->SetFhComment(fh_comment);
+
+    writer->BusType(MdfBusType::FlexRay);
+    writer->StorageType(MdfStorageType::VlsdStorage);
+    writer->PreTrigTime(0.0);
+    writer->CompressData(false);
+
+    // Create a DG block
+    auto* last_dg = header->CreateDataGroup();
+    ASSERT_TRUE(last_dg != nullptr);
+
+    // Create a MOST
+    FlexRayConfigAdapter flx_config(*writer);
+    flx_config.CreateConfig(*last_dg);
+
+    IChannelGroup* flx_frame = last_dg->GetChannelGroup("FLX_Frame");
+    ASSERT_TRUE(flx_frame != nullptr);
+
+    writer->InitMeasurement();
+    uint64_t tick_time = TimeStampToNs();
+    writer->StartMeasurement(tick_time);
+
+    for (size_t sample = 0; sample < max_sample; ++sample) {
+
+      FlexRayFrame frame;
+      frame.PayloadLength(2);
+      frame.DataBytes(sample_data);
+
+
+      // Add dummy message to all for message types. Not realistic
+      // but makes the test simpler.
+      writer->SaveFlexRayMessage(*last_dg, *flx_frame, tick_time, frame);
+      tick_time += 1'000'000;
+       writer->SaveFlexRayMessage(*last_dg, *flx_frame, tick_time, frame);
+      tick_time += 1'000'000;
+    }
+
+    writer->StopMeasurement(tick_time);
+    writer->FinalizeMeasurement();
+  }
+
+  path sorted_file = mdf_file.parent_path();
+  sorted_file /= mdf_file.stem();
+  sorted_file += "_sorted";
+  sorted_file += mdf_file.extension();
+  {
+    auto sortTask =
+            mdf::MdfFactory::CreateTask(mdf::MdfTaskType::MdfSortingTask);
+
+    sortTask->SourceFile(mdf_file.string());
+
+    sortTask->DestinationFile(sorted_file.string());
+    sortTask->SkipIfNoSamples(true);
+    sortTask->Run();
+  }
+
+  {
+    MdfReader reader(sorted_file.string());
+    ChannelObserverList observer_list;
+
+    ASSERT_TRUE(reader.IsOk());
+    ASSERT_TRUE(reader.ReadEverythingButData());
+    const MdfFile* file = reader.GetFile();
+    ASSERT_TRUE(file != nullptr);
+
+    const IHeader* header = file->Header();
+    ASSERT_TRUE(header != nullptr);
+
+    const auto dg_list = header->DataGroups();
+    EXPECT_EQ(dg_list.size(), 1);
+
+    for (IDataGroup* data_group : dg_list) {
+      ASSERT_TRUE(data_group != nullptr);
+
+      const auto cg_list = data_group->ChannelGroups();
+      EXPECT_EQ(cg_list.size(), 1);
+      for (IChannelGroup* channel_group : cg_list) {
+        ASSERT_TRUE(channel_group != nullptr);
+        CreateChannelObserverForChannelGroup(*data_group, *channel_group,
+                                             observer_list);
+      }
+      reader.ReadData(*data_group);
+      bool data_ok = false;
+      for (auto& observer : observer_list) {
+        ASSERT_TRUE(observer);
+        const uint64_t nof_samples = observer->NofSamples();
+        EXPECT_EQ(nof_samples, max_sample * 2);
+        if (observer->Name() == "FLX_Frame.DataBytes") {
+          for (uint64_t sample = 0; sample < max_sample; ++sample) {
+            std::vector<uint8_t> value_list;
+            const bool valid = observer->GetEngValue(sample, value_list);
+            EXPECT_TRUE(valid) << "Sample: " << sample;
+            EXPECT_EQ(value_list, sample_data);
+            data_ok = true;
+          }
+       }
+      }
+      EXPECT_TRUE(data_ok);
+    }
+    reader.Close();
+  }
+
+}
+
+TEST_F(TestFlexRayLogger, TestCustomConfig) {
+  if (kSkipTest) {
+    GTEST_SKIP();
+  }
+
+  constexpr size_t max_sample = 10;
+  const std::vector<uint8_t> sample_data({0xAA, 0xBB});
+  path mdf_file(kTestDir);
+  mdf_file.append("flx_custom_sorted.mf4");
+  {
+    auto writer = MdfFactory::CreateMdfWriter(MdfWriterType::MdfBusLogger);
+    ASSERT_TRUE(writer);
+    writer->Init(mdf_file.string());
+
+    auto* header = writer->Header();
+    ASSERT_TRUE(header != nullptr);
+    HdComment hd_comment("Test of FlexRay Custom Config");
+    hd_comment.Author("Ingemar Hedvall");
+    hd_comment.Department("IH Development");
+    hd_comment.Project("FlexRay bus support");
+    hd_comment.Subject("Testing FlexRay support");
+    hd_comment.TimeSource(MdString("PC UTC Time"));
+    header->SetHdComment(hd_comment);
+
+    auto* history = header->CreateFileHistory();
+    ASSERT_TRUE(history != nullptr);
+    FhComment fh_comment("Initial file change");
+    fh_comment.ToolId("Google Unit Test");
+    fh_comment.ToolVendor("ACME Road Runner Company");
+    fh_comment.ToolVersion("1.0");
+    fh_comment.UserName("ihedvall");
+    history->SetFhComment(fh_comment);
+
+    writer->BusType(MdfBusType::FlexRay);
+    writer->StorageType(MdfStorageType::FixedLengthStorage);
+    writer->PreTrigTime(0.0);
+    writer->CompressData(false);
+    writer->MandatoryMembersOnly(false);
+
+    FlexRayConfigAdapter flx_config(*writer);
+     // Create a DG block
+    IDataGroup* dg_data_frame = header->CreateDataGroup();
+    ASSERT_TRUE(dg_data_frame != nullptr);
+     IChannelGroup* flx_frame = flx_config.CreateCustomConfig(
+      *dg_data_frame, FlexRayMessageType::Frame);
+    ASSERT_TRUE(flx_frame != nullptr);
+
+    IDataGroup* dg_error_frame = header->CreateDataGroup();
+    ASSERT_TRUE(dg_error_frame != nullptr);
+    IChannelGroup* error_frame = flx_config.CreateCustomConfig(
+      *dg_error_frame, FlexRayMessageType::ErrorFrame);
+    ASSERT_TRUE(error_frame != nullptr);
+
+    writer->InitMeasurement();
+    uint64_t tick_time = TimeStampToNs();
+    writer->StartMeasurement(tick_time);
+
+    for (size_t sample = 0; sample < max_sample; ++sample) {
+
+      FlexRayFrame d_frame;
+      d_frame.DataBytes(sample_data);
+
+      FlexRayErrorFrame e_frame;
+      e_frame.DataBytes(sample_data);
+
+      writer->SaveFlexRayMessage(*dg_data_frame, *flx_frame, tick_time, d_frame);
+      tick_time += 1'000'000;
+      writer->SaveFlexRayMessage(*dg_error_frame, *error_frame, tick_time, e_frame);
+      tick_time += 1'000'000;
+    }
+
+    writer->StopMeasurement(tick_time);
+    writer->FinalizeMeasurement();
+  }
+
+  {
+    MdfReader reader(mdf_file.string());
+    ChannelObserverList observer_list;
+
+    ASSERT_TRUE(reader.IsOk());
+    ASSERT_TRUE(reader.ReadEverythingButData());
+    const MdfFile* file = reader.GetFile();
+    ASSERT_TRUE(file != nullptr);
+
+    const IHeader* header = file->Header();
+    ASSERT_TRUE(header != nullptr);
+
+    const auto dg_list = header->DataGroups();
+    EXPECT_EQ(dg_list.size(), 2);
+
+    for (IDataGroup* data_group : dg_list) {
+      ASSERT_TRUE(data_group != nullptr);
+
+      const auto cg_list = data_group->ChannelGroups();
+      EXPECT_EQ(cg_list.size(), 1);
+      for (IChannelGroup* channel_group : cg_list) {
+        ASSERT_TRUE(channel_group != nullptr);
+        CreateChannelObserverForChannelGroup(*data_group, *channel_group,
+                                             observer_list);
+      }
+      reader.ReadData(*data_group);
+      bool data_ok = false;
+      for (auto& observer : observer_list) {
+        ASSERT_TRUE(observer);
+        const uint64_t nof_samples = observer->NofSamples();
+
+        EXPECT_EQ(nof_samples, max_sample);
+        const auto& channel = observer->Channel();
+        if (channel.DataType() == ChannelDataType::ByteArray &&
+            (channel.Type() == ChannelType::VariableLength ||
+             channel.Type() == ChannelType::MaxLength) ) {
+          for (uint64_t sample = 0; sample < max_sample; ++sample) {
+            std::vector<uint8_t> value_list;
+            const bool valid = observer->GetEngValue(sample, value_list);
+            EXPECT_TRUE(valid) << "Sample: " << sample;
+            EXPECT_EQ(value_list, sample_data);
+            data_ok = true;
+          }
+        }
+
+
+      }
+      EXPECT_TRUE(data_ok);
+    }
+    reader.Close();
+  }
 
 }
 

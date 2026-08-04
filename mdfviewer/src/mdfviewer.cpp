@@ -4,10 +4,10 @@
  */
 #include <filesystem>
 #include <codecvt>
+#include <locale>
 #define BOOST_LOCALE_HIDE_AUTO_PTR
 
 #include <boost/filesystem.hpp>
-#include <boost/locale.hpp>
 #include <boost/asio.hpp>
 #include <boost/process.hpp>
 
@@ -67,8 +67,11 @@ bool MdfViewer::OnInit() {
   }
 
   // Setup correct localization when formatting date and times
-  boost::locale::generator gen;
-  std::locale::global(gen(""));
+  //boost::locale::generator gen;
+
+  std::locale::global(std::locale(""));
+  std::cout.imbue(std::locale::classic());
+  std::wcout.imbue(std::locale::classic());
 
     // Setup system basic configuration
   SetVendorDisplayName("MdfLib");

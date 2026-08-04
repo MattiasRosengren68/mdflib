@@ -15,11 +15,10 @@ class ConverterSampleQueue : public Writer4SampleQueue {
   ConverterSampleQueue(MdfWriter& writer,
                      IDataGroup& data_group);
   ~ConverterSampleQueue() override;
-
- protected:
   void TrimQueue() override; ///< Trims the sample queue.
   void SaveQueue(std::unique_lock<std::mutex>& lock) override;
   void CleanQueue(std::unique_lock<std::mutex>& lock) override;
+ protected:
 
   void SaveQueueCompressed(std::unique_lock<std::mutex>& lock) override;
 

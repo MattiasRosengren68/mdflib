@@ -5,7 +5,6 @@
 
 #include "copysampleobserver.h"
 
-#include <iostream>
 namespace mdf {
 CopySampleObserver::CopySampleObserver(const IDataGroup& data_group,
                                        const IChannelGroup& channel_group,
@@ -21,14 +20,16 @@ CopySampleObserver::CopySampleObserver(const IDataGroup& data_group,
 }
 
 void CopySampleObserver::OnSampleRecord() {
-   SampleRecord record;
-   GetSampleRecord(record);
-   record.record_id = dest_channel_group_.RecordId();
-   uint64_t sample_time = record.timestamp; // This is absolute time (ns)
-   if (!IgnoreSample(sample_time)) {
-     writer_.AddSample(dest_data_group_, dest_channel_group_, sample_time,
+  SampleRecord record;
+  GetSampleRecord(record);
+
+
+  record.record_id = dest_channel_group_.RecordId();
+  uint64_t sample_time = record.timestamp; // This is absolute time (ns)
+  if (!IgnoreSample(sample_time)) {
+    writer_.AddSample(dest_data_group_, dest_channel_group_, sample_time,
                                      std::move(record));
-   }
+  }
 }
 void CopySampleObserver::SetTimeRange(double min_time, double max_time) {
   min_time_ = static_cast<uint64_t>(

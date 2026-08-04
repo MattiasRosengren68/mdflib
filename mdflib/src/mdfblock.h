@@ -4,18 +4,19 @@
  */
 #pragma once
 #include <cstdint>
-#include <cstdio>
+#include <cctype>
 #include <iomanip>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "bigbuffer.h"
 #include "blockproperty.h"
 #include "littlebuffer.h"
 #include "mdf/imetadata.h"
-#include "platform.h"
+
 
 namespace mdf::detail {
 
@@ -60,13 +61,12 @@ uint64_t WriteStr(std::streambuf& buffer, const std::string &source, uint64_t si
 template <typename T>
 std::string ToHexString(const T &value) {
   std::ostringstream temp;
-  temp << "0x" << std::hex << std::setfill('0') << std::uppercase;
-  if (sizeof(T) == 1) {
-    temp << std::setw(2) << static_cast<int>(value);
-  } else {
-    temp << value;
-  }
-  return temp.str();
+  // std::locale is messing around and adding spaces
+  temp.imbue(std::locale::classic());
+  temp << "0x" << std::uppercase
+   << std::hex << static_cast<int64_t>(value);
+  std::string hex_text = temp.str();
+   return hex_text;
 }
 
 template <typename T>
